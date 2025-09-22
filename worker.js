@@ -58,7 +58,13 @@ async function handleFeed(req) {
   }
 
   // NOTE: network wait not counted in CPU time
-  const upstream = await fetch(params.url, { redirect: "follow" });
+  const upstream = await fetch(params.url, {
+    redirect: "follow", //
+    signal: AbortSignal.timeout(2_000), // 2s timeout
+  }).catch((error) => {
+    throw http(502, `Page fetch error: ${error.message}`);
+  });
+
   if (!upstream.ok) throw http(502, `Upstream ${upstream.status}`);
 
   const t0 = performance.now(); // start CPU timing
@@ -118,12 +124,11 @@ async function extractItems(upstream, params) {
   let current = null;
 
 
-  // Small caps to prevent heavy strings (now per char)
+  // Cap to cut long strings
   const CAP_TITLE = 128;
   const CAP_DESC = 1024;
   const CAP_DATE = 64;
 
-  // Bind once to avoid recreating handler closures mid-stream
   const rewriter = new HTMLRewriter().on(params.item, {
     element(elem) {
       if (items.length >= params.limit) return;
