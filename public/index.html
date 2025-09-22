@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="assets/water.css">
+<title>Feedmaker</title>
+<style>
+  body {
+    font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+    max-width: 720px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+  }
+
+  form {
+    display: grid;
+    gap: .6rem
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns:1fr 1fr;
+    gap: .6rem
+  }
+
+  :root {
+    --tip-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" aria-hidden="true" viewBox="0 0 24 24" fill="%23555"><circle cx="12" cy="12" r="10" fill="none" stroke="%23555" stroke-width="1.5"/><path d="M12 17h.01M9.5 10.5a2.5 2.5 0 1 1 4.3 1.7c-.7.7-1.3 1-1.3 2.3" stroke="%23555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>');
+  }
+
+  input[title] {
+    background-image: var(--tip-icon);
+    background-repeat: no-repeat;
+    background-position: right .65rem center;
+    background-size: 1rem;
+    padding-right: 2rem;
+  }
+
+  :root {
+    --sep: rgba(0, 0, 0, .15);
+  }
+
+  .separator {
+    border-top: 1px dashed rgba(0, 0, 0, .15);
+    margin: .5rem 0;
+  }
+
+  #preview code {
+    padding: 1.5em;
+    max-height: 280px;
+    font-size: 0.85em;
+    overflow: auto;
+  }
+</style>
+<h1>RSSible</h1>
+<p>Paste a URL and CSS selectors; get an RSS feed.</p>
+
+<form method="GET" action="/feed">
+  <input name="url" placeholder="URL of the page" required/>
+  <div class="row">
+    <input name="item" placeholder="Item (e.g., .post)" required title="CSS selector for items (required)"/>
+    <input name="title" placeholder="Title (e.g., .post-title)"
+           title="CSS selector inside each item for title (optional)"/>
+  </div>
+
+  <div class="row">
+    <input name="link" placeholder="Link (e.g., .post-title a)"
+           title="CSS selector inside each item for link (optional)"/>
+    <select name="mode" id="mode">
+      <option value="lite" selected>🌱 Lite mode</option>
+      <option value="full">🌳 Full mode</option>
+    </select>
+  </div>
+
+  <!-- Shown only when mode=full -->
+  <div class="row" id="row-full-only">
+    <input name="desc" placeholder="Description (e.g., .post-excerpt)" title="CSS selector for description (optional)"/>
+    <input name="date" placeholder="Date (e.g., .post-date)"
+           title="CSS selector for publication date (optional); date string must be parsable by JS Date()."/>
+  </div>
+
+  <div class="row">
+    <input name="limit" placeholder="Limit (e.g, 10)"
+           title="Maximum number of items to include (default 5, max 25)"/>
+    <span><!-- keep for alignment --></span>
+  </div>
+
+  <div class="row">
+    <button type="button" id="preview-btn" title="Show first two items as RSS <item> nodes">Preview</button>
+    <button type="submit" title="Build the RSS feed URL">Copy link</button>
+  </div>
+</form>
+
+<p></p>
+
+<small>
+  <b>Important:</b> Don't repeat the <em>item</em> selector in title/link/desc/date selectors.
+  Think of the <em>item</em> as the div container for, say, article, and <em>item details</em>
+  as the elements <em>inside</em> each article. If multiple elements match, the first wins.<br>
+
+  <div class="separator"></div>
+
+  <b>Pro tip:</b> Use <code>:first-of-type</code> or <code>:nth-of-type(n)</code> if
+  the selector matches multiple elements <em>inside</em> the <em>item</em>.<br>
+
+  <div class="separator"></div>
+
+  <b>Pro tip:</b> Use <code>:has(...)</code> in the <em>item</em> selector to filter items. For
+  example, <code>article:has(.post-title a[href*="keyword"])</code> would include only articles whose
+  title link contains "keyword".<br>
+</small>
+
+<pre id="preview">
+  <code>// 👀 Your preview will show up here...</code>
+</pre>
+
+<script>
+  (function () {
+    const mode = document.getElementById('mode');
+    const fullRow = document.getElementById('row-full-only');
+    const desc = fullRow.querySelector('[name="desc"]');
+    const date = fullRow.querySelector('[name="date"]');
+
+    function sync() {
+      const isFull = mode.value === 'full';
+      fullRow.classList.toggle('hidden', !isFull);
+      desc.disabled = !isFull;
+      date.disabled = !isFull;
+    }
+
+    mode.addEventListener('change', sync);
+    sync();
+  })();
+</script>
+
+<script>
+  const form = document.querySelector('form');
+  const previewBtn = document.getElementById('preview-btn');
+  const previewBox = document.getElementById('preview');
+  const previewCode = previewBox.querySelector('code');
+
+  async function previewTwo() {
+    const previewUrl = buildFeedURL(2);
+    const fullUrl = buildFeedURL();
+
+    previewCode.textContent = 'Loading preview…';
+
+    try {
+      const res = await fetch(previewUrl);
+      if (!res.ok) throw new Error(await res.text());
+      const xml = await res.text();
+
+      const doc = new DOMParser().parseFromString(xml, 'application/xml');
+      const parseErr = doc.querySelector('parsererror');
+      if (parseErr) throw new Error('Invalid RSS/XML returned.');
+
+      const items = Array.from(doc.querySelectorAll('item')).slice(0, 2);
+
+      const lines = items.map(it => {
+        const title = it.querySelector('title')?.textContent?.trim() || '(empty)';
+        const link = it.querySelector('link')?.textContent?.trim() || '(empty)';
+        const desc = it.querySelector('description')?.textContent?.trim();
+        const date = it.querySelector('pubDate')?.textContent?.trim();
+
+        let block = `Title: ${title}\nLink: ${link}`;
+        if (desc) block += `\nDesc: ${desc}`;
+        if (date) block += `\nDate: ${date}`;
+        return block;
+      });
+
+      const body = items.length
+        ? lines.join('\n\n') + '\n\n...'
+        : '// No items found.';
+
+      // URL first, then items
+      previewCode.textContent = `Feed URL: ${fullUrl}\n\n${body}`;
+    } catch (e) {
+      previewCode.textContent = '// ' + (e.message || String(e) || 'Unknown error.');
+    }
+  }
+
+  previewBtn.addEventListener('click', previewTwo);
+</script>
+
+<script>
+  function buildFeedURL(limit) {
+    const fd = new FormData(form);
+    const qs = new URLSearchParams();
+
+    // Get rid of empty params
+    for (const [key, val] of fd.entries()) {
+      const v = val.trim?.() ?? val;
+      if (v) qs.set(key, v);
+    }
+
+    // Override in preview mode
+    if (limit != null) qs.set('limit', String(limit));
+
+    const u = new URL('/feed', location.href);
+    u.search = qs.toString();
+    return u;
+  }
+
+  // Intercept form submit to copy the URL instead
+  const submitBtn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const u = buildFeedURL();
+    try {
+      await navigator.clipboard.writeText(u.toString());
+      const prev = submitBtn.textContent;
+      submitBtn.textContent = 'Copied!';
+      setTimeout(() => (submitBtn.textContent = prev), 1200);
+    } catch {
+      alert('Copy failed. You can copy it from the preview box.');
+    }
+  });
+</script>
+</html>

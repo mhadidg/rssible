@@ -1,0 +1,10 @@
+name = "feedmaker"
+main = "worker.js"
+compatibility_date = "2025-09-21"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Smaller bundle / faster startup
+minify = true
