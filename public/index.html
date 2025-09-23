@@ -67,8 +67,9 @@
     <input name="link" placeholder="Link (e.g., .post-title a)"
            title="CSS selector inside each item for link (optional)"/>
     <select name="mode" id="mode">
-      <option value="lite" selected>🌱 Lite mode</option>
-      <option value="full">🌳 Full mode</option>
+      <option value="lite" selected>🐣 Lite mode</option>
+      <option value="full">🐥 Full mode</option>
+      <option value="advanced">🦅 Advanced mode</option>
     </select>
   </div>
 
@@ -77,6 +78,11 @@
     <input name="desc" placeholder="Description (e.g., .post-excerpt)" title="CSS selector for description (optional)"/>
     <input name="date" placeholder="Date (e.g., .post-date)"
            title="CSS selector for publication date (optional); date string must be parsable by JS Date()."/>
+  </div>
+
+  <div class="row" id="row-advanced-only">
+    <textarea name="headers" placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: text/html" rows="4"></textarea>
+    <input type="hidden" name="headers"/>
   </div>
 
   <div class="row">
@@ -112,20 +118,33 @@
   // Disable mode-specific fields when mode changes
   (function () {
     const mode = document.getElementById('mode');
+
     const fullRow = document.getElementById('row-full-only');
     const desc = fullRow.querySelector('[name="desc"]');
     const date = fullRow.querySelector('[name="date"]');
 
+    const advancedRow = document.getElementById('row-advanced-only');
+    const headers = advancedRow.querySelector('[name="headers"]');
+
     function sync() {
       const isFull = mode.value === 'full';
-      desc.disabled = !isFull;
-      date.disabled = !isFull;
+      const isAdvanced = mode.value === 'advanced';
+
+      desc.disabled = !(isFull || isAdvanced);
+      date.disabled = !(isFull || isAdvanced);
+      headers.disabled = !isAdvanced;
+
+      // If disabled clear values
+      if (desc.disabled) desc.value = '';
+      if (date.disabled) date.value = '';
+      if (headers.disabled) headers.value = '';
     }
 
     mode.addEventListener('change', sync);
     sync();
   })();
 </script>
+
 
 <script>
   // Preview RSS feed with first two items
@@ -250,4 +269,28 @@
     form.addEventListener('input', save, { passive: true });
   })();
 </script>
+
+<script>
+  const advancedRow = document.getElementById('row-advanced-only');
+  const headersInput = advancedRow.querySelector('textarea[name="headers"]');
+  const headersHidden = advancedRow.querySelector('input[name="headers"]');
+
+  // Encode RFC-style header block into base64 (ASCII-safe)
+  function encodeHeaders(raw) {
+    return raw ? btoa(raw) : "";
+  }
+
+  // Keep hidden field in sync with textarea
+  headersInput.addEventListener('input', () => {
+    headersHidden.value = encodeHeaders(headersInput.value.trim());
+  });
+
+  // Patch buildFeedURL so headers are always up-to-date
+  const originalBuildFeedURL = buildFeedURL;
+  buildFeedURL = function (limit) {
+    headersHidden.value = encodeHeaders(headersInput.value.trim());
+    return originalBuildFeedURL(limit);
+  };
+</script>
+
 </html>

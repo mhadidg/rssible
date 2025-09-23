@@ -60,7 +60,8 @@ async function handleFeed(req) {
   // NOTE: network wait not counted in CPU time
   const upstream = await fetch(params.url, {
     redirect: "follow", //
-    signal: AbortSignal.timeout(2_000), // 2s timeout
+    signal: AbortSignal.timeout(2_000), //
+    headers: params.headers,
   }).catch((error) => {
     throw http(502, `Page fetch error: ${error.message}`);
   });
@@ -98,8 +99,8 @@ function parseParams(query) {
   if (!url || !item) throw http(400, "Query params 'url' and 'item' are required");
 
   // Default to "lite" (title+link only)
-  let modeRaw = (query.get("mode") || "lite").toLowerCase();
-  const mode = (modeRaw === "full") ? "full" : "lite";
+  const modeRaw = (query.get("mode") || "lite").toLowerCase();
+  const mode = (modeRaw === "full") ? "full" : (modeRaw === "advanced" ? "advanced" : "lite");
 
   const title = trim(query.get("title"));
   const link = trim(query.get("link"));
@@ -116,7 +117,19 @@ function parseParams(query) {
   const streamRaw = (query.get("stream") || "on").toLowerCase();
   const stream = !(streamRaw === "off");
 
-  return { url, item, title, link, desc, date, mode, limit, stream };
+  let headers;
+  // Base64-encoded RFC-style headers block
+  const headersB64 = trim(query.get("headers"));
+  if (mode === "advanced" && headersB64) {
+    try {
+      const raw = decodeB64(headersB64);
+      headers = sanitizeHeaders(parseHeaders(raw));
+    } catch (e) {
+      throw http(400, "Invalid 'headers' parameter (base64 or header lines).");
+    }
+  }
+
+  return { url, item, title, link, desc, date, mode, limit, stream, headers };
 }
 
 async function extractItems(upstream, params) {
@@ -260,4 +273,55 @@ function http(status, message) {
   const e = new Error(message);
   e.status = status;
   return e;
+}
+
+function decodeB64(rawB64) {
+  // matches client-side btoa(raw)
+  return atob(rawB64);
+}
+
+function parseHeaders(block) {
+  const out = {};
+  // RFC-style lines: "Name: value"
+  for (const rawLine of block.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue; // skip empty
+
+    const idx = line.indexOf(":");
+    if (idx <= 0) continue; // skip malformed
+
+    const name = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim();
+    if (!name) continue; // allow empty value
+
+    out[name] = value;
+  }
+
+  return out;
+}
+
+function sanitizeHeaders(headers) {
+  if (!headers) return undefined;
+
+  const drop = new Set([
+    "connection",
+    "proxy-connection",
+    "keep-alive",
+    "transfer-encoding",
+    "upgrade",
+    "te",
+    "host",
+    "content-length",
+    "content-encoding",
+    "proxy-authorization"
+  ]);
+
+  const out = {};
+  for (const [k, v] of Object.entries(headers)) {
+    const lower = k.toLowerCase();
+    if (drop.has(lower)) continue;
+    out[k] = v;
+  }
+
+  return Object.keys(out).length ? out : undefined;
 }
