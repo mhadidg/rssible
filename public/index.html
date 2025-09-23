@@ -148,7 +148,7 @@
   })();
 </script>
 
-
+<!--suppress CssInvalidHtmlTagReference -->
 <script>
   // Preview RSS feed with first two items
   const form = document.querySelector('form');
@@ -168,9 +168,6 @@
       const xml = await res.text();
 
       const doc = new DOMParser().parseFromString(xml, 'application/xml');
-      const parseErr = doc.querySelector('parsererror');
-      if (parseErr) throw new Error('Invalid RSS/XML returned.');
-
       const items = Array.from(doc.querySelectorAll('item')).slice(0, 2);
 
       const lines = items.map(it => {
