@@ -114,6 +114,7 @@
 </pre>
 
 <script>
+  // Disable mode-specific fields when mode changes
   (function () {
     const mode = document.getElementById('mode');
     const fullRow = document.getElementById('row-full-only');
@@ -133,6 +134,7 @@
 </script>
 
 <script>
+  // Preview RSS feed with first two items
   const form = document.querySelector('form');
   const previewBtn = document.getElementById('preview-btn');
   const previewBox = document.getElementById('preview');
@@ -182,6 +184,21 @@
 </script>
 
 <script>
+  // Intercept form submit to copy the URL instead
+  const submitBtn = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const u = buildFeedURL();
+    try {
+      await navigator.clipboard.writeText(u.toString());
+      const prev = submitBtn.textContent;
+      submitBtn.textContent = 'Copied!';
+      setTimeout(() => (submitBtn.textContent = prev), 1200);
+    } catch {
+      alert('Copy failed. You can copy it from the preview box.');
+    }
+  });
+
   function buildFeedURL(limit) {
     const fd = new FormData(form);
     const qs = new URLSearchParams();
@@ -199,20 +216,5 @@
     u.search = qs.toString();
     return u;
   }
-
-  // Intercept form submit to copy the URL instead
-  const submitBtn = form.querySelector('button[type="submit"]');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const u = buildFeedURL();
-    try {
-      await navigator.clipboard.writeText(u.toString());
-      const prev = submitBtn.textContent;
-      submitBtn.textContent = 'Copied!';
-      setTimeout(() => (submitBtn.textContent = prev), 1200);
-    } catch {
-      alert('Copy failed. You can copy it from the preview box.');
-    }
-  });
 </script>
 </html>
