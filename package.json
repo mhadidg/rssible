@@ -4,12 +4,15 @@
   "description": "",
   "main": "worker.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "npx wrangler dev --local",
+    "deploy": "npx wrangler deploy",
+    "repomix": "npx repomix --include 'public/**,worker.js,wrangler.toml' -i public/assets -o repomix.xml"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "wrangler": "^4.38.0"
+    "wrangler": "^4.38.0",
+    "repomix": "^1.6.0"
   }
 }
