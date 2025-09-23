@@ -58,14 +58,12 @@
   <input name="url" placeholder="URL of the page" required/>
   <div class="row">
     <!-- "item" would collide with the built-in form.item -->
-    <input name="_item" placeholder="Item (e.g., .post)" title="CSS selector for items (required)" required/>
-    <input name="title" placeholder="Title (e.g., .post-title)"
-           title="CSS selector inside each item for title (optional)"/>
+    <input name="_item" placeholder="Item container (e.g., .post)" title="CSS selector for items (required)" required/>
+    <input name="title" placeholder="Title (e.g., .post-title)" title="CSS selector inside each item for title (optional)"/>
   </div>
 
   <div class="row">
-    <input name="link" placeholder="Link (e.g., .post-title a)"
-           title="CSS selector inside each item for link (optional)"/>
+    <input name="link" placeholder="Link (e.g., .post-title a)" title="CSS selector inside each item for link (optional)"/>
     <select name="mode" id="mode">
       <option value="lite" selected>🐣 Lite mode</option>
       <option value="full">🐥 Full mode</option>
@@ -76,8 +74,7 @@
   <!-- Shown only when mode=full -->
   <div class="row" id="row-full-only">
     <input name="desc" placeholder="Description (e.g., .post-excerpt)" title="CSS selector for description (optional)"/>
-    <input name="date" placeholder="Date (e.g., .post-date)"
-           title="CSS selector for publication date (optional); date string must be parsable by JS Date()."/>
+    <input name="date" placeholder="Date (e.g., .post-date)" title="CSS selector for publication date (optional); date string must be parsable by JS Date()."/>
   </div>
 
   <div class="row" id="row-advanced-only">
@@ -86,8 +83,7 @@
   </div>
 
   <div class="row">
-    <input name="limit" placeholder="Limit (e.g, 10)"
-           title="Maximum number of items to include (default 5, max 25)"/>
+    <input name="limit" placeholder="Limit (e.g, 10)" title="Maximum number of items to include (default 5, max 25)"/>
     <span><!-- keep for alignment --></span>
   </div>
 
