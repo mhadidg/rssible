@@ -218,6 +218,7 @@
 
     // Get rid of empty params
     for (const [key, val] of fd.entries()) {
+      if (key === 'headers_text') continue;
       const v = val.trim?.() ?? val;
       if (v) qs.set(key, v);
     }
@@ -271,6 +272,7 @@
 </script>
 
 <script>
+  // Sync headers textarea with hidden base64 field
   const advancedRow = document.getElementById('row-advanced-only');
   const headersText = advancedRow.querySelector('textarea[name="headers_text"]');
   const headersB64 = advancedRow.querySelector('input[name="headers"]');
