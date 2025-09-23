@@ -60,7 +60,7 @@ async function handleFeed(req) {
   // NOTE: network wait not counted in CPU time
   const upstream = await fetch(params.url, {
     redirect: "follow", //
-    signal: AbortSignal.timeout(2_000), //
+    signal: AbortSignal.timeout(3_000), //
     headers: params.headers,
   }).catch((error) => {
     throw http(502, `Page fetch error: ${error.message}`);
