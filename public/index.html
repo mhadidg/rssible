@@ -217,4 +217,44 @@
     return u;
   }
 </script>
+
+<script>
+  // Retain form values on page reload
+  (function () {
+    const KEY = 'rssible-form';
+    const form = document.querySelector('form');
+
+    // Restore on load
+    try {
+      const saved = localStorage.getItem(KEY);
+      if (saved) {
+        const params = new URLSearchParams(saved);
+        for (const [k, v] of params) {
+          const el = form.elements[k];
+          if (!el) continue;
+          el.value = v;
+        }
+
+        // re-sync "full-only" row if mode was restored
+        const mode = form.elements['mode'];
+        mode && mode.dispatchEvent(new Event('change'));
+      }
+    } catch {}
+
+    // Save on every change/input
+    function save() {
+      const params = new URLSearchParams();
+      for (const el of form.elements) {
+        if (!el.name) continue;
+        const val = (el.value || '').trim();
+        if (val) params.set(el.name, val);
+      }
+
+      try { localStorage.setItem(KEY, params.toString()); } catch {}
+    }
+
+    form.addEventListener('input', save, { passive: true });
+    form.addEventListener('change', save);
+  })();
+</script>
 </html>
