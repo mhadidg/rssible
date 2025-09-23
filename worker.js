@@ -58,10 +58,11 @@ async function handleFeed(req) {
   }
 
   // NOTE: network wait not counted in CPU time
+  const defaultHeaders = { 'User-Agent': 'RSSible/1.0 (+https://rssible.mhadidg.com/)' };
   const upstream = await fetch(params.url, {
     redirect: "follow", //
     signal: AbortSignal.timeout(3_000), //
-    headers: params.headers,
+    headers: { ...defaultHeaders, ...params.headers }, // params override
   }).catch((error) => {
     throw http(502, `Page fetch error: ${error.message}`);
   });
@@ -98,7 +99,7 @@ function parseParams(query) {
   const item = (query.get("_item") || "").trim();
   if (!url || !item) throw http(400, "Query params 'url' and 'item' are required");
 
-  // Default to "lite" (title+link only)
+  // Default to "lite" mode (title & link only)
   const modeRaw = (query.get("mode") || "lite").toLowerCase();
   const mode = (modeRaw === "full") ? "full" : (modeRaw === "advanced" ? "advanced" : "lite");
 
@@ -123,6 +124,7 @@ function parseParams(query) {
   if (mode === "advanced" && headersB64) {
     try {
       const raw = decodeB64(headersB64);
+      // Converts to { name: value, ... }
       headers = sanitizeHeaders(parseHeaders(raw));
     } catch (e) {
       throw http(400, "Invalid 'headers' parameter (base64 or header lines).");
