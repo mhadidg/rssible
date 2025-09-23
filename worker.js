@@ -57,8 +57,12 @@ async function handleFeed(req) {
     if (cached) return cached;
   }
 
+  const defaultHeaders = {
+    'User-Agent': 'RSSible/1.0 (+https://rssible.mhadidg.com/)', //
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  };
+
   // NOTE: network wait not counted in CPU time
-  const defaultHeaders = { 'User-Agent': 'RSSible/1.0 (+https://rssible.mhadidg.com/)' };
   const upstream = await fetch(params.url, {
     redirect: "follow", //
     signal: AbortSignal.timeout(3_000), //
