@@ -81,8 +81,8 @@
   </div>
 
   <div class="row" id="row-advanced-only">
-    <textarea name="headers" placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: text/html" rows="4"></textarea>
-    <input type="hidden" name="headers"/>
+    <textarea name="headers_text" placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: text/html" rows="4"></textarea>
+    <input name="headers" type="hidden"/>
   </div>
 
   <div class="row">
@@ -124,7 +124,7 @@
     const date = fullRow.querySelector('[name="date"]');
 
     const advancedRow = document.getElementById('row-advanced-only');
-    const headers = advancedRow.querySelector('[name="headers"]');
+    const headers = advancedRow.querySelector('[name="headers_text"]');
 
     function sync() {
       const isFull = mode.value === 'full';
@@ -272,8 +272,8 @@
 
 <script>
   const advancedRow = document.getElementById('row-advanced-only');
-  const headersInput = advancedRow.querySelector('textarea[name="headers"]');
-  const headersHidden = advancedRow.querySelector('input[name="headers"]');
+  const headersText = advancedRow.querySelector('textarea[name="headers_text"]');
+  const headersB64 = advancedRow.querySelector('input[name="headers"]');
 
   // Encode RFC-style header block into base64 (ASCII-safe)
   function encodeHeaders(raw) {
@@ -281,14 +281,14 @@
   }
 
   // Keep hidden field in sync with textarea
-  headersInput.addEventListener('input', () => {
-    headersHidden.value = encodeHeaders(headersInput.value.trim());
+  headersText.addEventListener('input', () => {
+    headersB64.value = encodeHeaders(headersText.value.trim());
   });
 
   // Patch buildFeedURL so headers are always up-to-date
   const originalBuildFeedURL = buildFeedURL;
   buildFeedURL = function (limit) {
-    headersHidden.value = encodeHeaders(headersInput.value.trim());
+    headersB64.value = encodeHeaders(headersText.value.trim());
     return originalBuildFeedURL(limit);
   };
 </script>
