@@ -107,8 +107,8 @@ function parseParams(query) {
   if (!title && !link) throw http(400, "Provide at least one selector: 'title' or 'link'.");
 
   // In lite mode, ignore desc/date entirely (less CPU time)
-  const desc = (mode === "full") ? trim(query.get("desc")) : undefined;
-  const date = (mode === "full") ? trim(query.get("date")) : undefined;
+  const desc = (mode !== "lite") ? trim(query.get("desc")) : undefined;
+  const date = (mode !== "lite") ? trim(query.get("date")) : undefined;
 
   // Accept weird formats, like OxFF or 1e1
   const limitRaw = Number(query.get("limit") || DEFAULT_LIMIT);
