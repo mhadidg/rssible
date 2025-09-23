@@ -197,7 +197,7 @@ async function extractItems(upstream, params) {
         if (current.pubDate || items.length >= params.limit) return;
 
         const value = safeCap(text.text, CAP_DATE);
-        if (value) current.pubDate = value;
+        if (value) current.pubDate = new Date(value).toISOString();
       },
     });
   }
