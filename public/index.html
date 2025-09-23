@@ -50,6 +50,10 @@
     font-size: 0.85em;
     overflow: auto;
   }
+
+  .textarea-wrapper {
+    margin-right: 6px;
+  }
 </style>
 <h1>RSSible</h1>
 <p>Paste a URL and CSS selectors; get an RSS feed.</p>
@@ -78,8 +82,11 @@
   </div>
 
   <div class="row" id="row-advanced-only">
-    <textarea name="headers_text" placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: text/html" rows="4"></textarea>
+    <div class="textarea-wrapper">
+      <textarea name="headers_text" placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: text/html" rows="4"></textarea>
+    </div>
     <input name="headers" type="hidden"/>
+    <span><!-- keep for alignment --></span>
   </div>
 
   <div class="row">
