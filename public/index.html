@@ -75,22 +75,29 @@
     </select>
   </div>
 
-  <!-- Shown only when mode=full -->
+  <!-- Enabled only when mode=full -->
   <div class="row" id="row-full-only">
-    <input name="desc" placeholder="Description (e.g., .post-excerpt)" title="CSS selector for description (optional)"/>
-    <input name="date" placeholder="Date (e.g., .post-date)" title="CSS selector for publication date (optional); date string must be parsable by JS Date()."/>
+    <input name="desc" placeholder="Description (e.g., .post-excerpt)" title="CSS selector for description"/>
+    <input name="date" placeholder="Date (e.g., .post-date)" title="CSS selector for pub date; must be parsable by JS Date()."/>
   </div>
 
+  <!-- Enabled only when mode=advanced -->
   <div class="row" id="row-advanced-only">
     <div class="textarea-wrapper">
-      <textarea name="headers_text" placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: text/html" rows="4"></textarea>
+      <textarea
+        name="headers_text" rows="4" title="Empty headers are allowed; unsupported headers will be ignored."
+        placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: text/html"></textarea>
+      <input name="headers" type="hidden"/>
     </div>
-    <input name="headers" type="hidden"/>
-    <span><!-- keep for alignment --></span>
+    <div class="textarea-wrapper">
+      <textarea
+        name="filters" rows="4" title="Supported keys: item, title, link, desc. 'item' matches any text inside."
+        placeholder="Filters (JS-style, one per line):&#10;item=/keyword/i&#10;title=/python|rust/i"></textarea>
+    </div>
   </div>
 
   <div class="row">
-    <input name="limit" placeholder="Limit (e.g, 10)" title="Maximum number of items to include (default 5, max 25)"/>
+    <input name="limit" placeholder="Limit (e.g, 10)" title="Max number of items to include (default 5, max 25)"/>
     <span><!-- keep for alignment --></span>
   </div>
 
@@ -128,6 +135,7 @@
 
     const advancedRow = document.getElementById('row-advanced-only');
     const headers = advancedRow.querySelector('[name="headers_text"]');
+    const filters = advancedRow.querySelector('[name="filters"]');
 
     function sync() {
       const isFull = mode.value === 'full';
@@ -136,11 +144,13 @@
       desc.disabled = !(isFull || isAdvanced);
       date.disabled = !(isFull || isAdvanced);
       headers.disabled = !isAdvanced;
+      filters.disabled = !isAdvanced;
 
       // If disabled clear values
       if (desc.disabled) desc.value = '';
       if (date.disabled) date.value = '';
       if (headers.disabled) headers.value = '';
+      if (filters.disabled) headers.value = '';
     }
 
     mode.addEventListener('change', sync);

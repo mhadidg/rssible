@@ -131,28 +131,46 @@ function parseParams(query) {
     }
   }
 
-  return { url, item, title, link, desc, date, mode, limit, stream, headers };
+  // Compiles to array of { field, regex }
+  const filterRaw = trim(query.get("filters")); // one textarea; multiple lines
+  console.log(`Filters: ${JSON.stringify(filterRaw)}`);
+  const filters = filterRaw ? parseFilters(filterRaw) : undefined;
+
+  return { url, item, title, link, desc, date, mode, limit, stream, headers, filters };
 }
 
 async function extractItems(upstream, params) {
   const items = [];
   let current = null;
 
-
   // Cap to cut long strings
   const CAP_TITLE = 128;
   const CAP_DESC = 1024;
   const CAP_DATE = 64;
+  const CAP_ITEMTEXT = 2048; // item-level text captured for filtering
 
   const rewriter = new HTMLRewriter().on(params.item, {
     element(elem) {
       if (items.length >= params.limit) return;
 
-      current = {};
+      current = { _text: "" };
       elem.onEndTag(() => {
-        if (current.title || current.link) items.push(current);
+        const match = matchFilters(current, params.filters, current._text);
+        if ((current.title || current.link) && match) {
+          items.push(current);
+        }
+
         current = {}; // reset for next item
       });
+    },
+
+    text(text) {
+      if (!params.filters.item) return;
+      if (!current || items.length >= params.limit) return;
+      if (current._text && current._text.length >= CAP_ITEMTEXT) return;
+
+      const chunk = text.text;
+      if (chunk) current._text = safeCap((current._text || "") + chunk, CAP_ITEMTEXT);
     },
   });
 
@@ -327,3 +345,49 @@ function sanitizeHeaders(headers) {
 
   return Object.keys(out).length ? out : undefined;
 }
+
+// Supported keys: item, title, link, desc (date not unsupported)
+// Block lines like: key=/pattern/flags
+function parseFilters(block) {
+  const out = {};
+  for (const rawLine of block.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const eq = line.indexOf("=");
+    if (eq <= 0) continue;
+
+    const key = line.slice(0, eq).trim().toLowerCase();
+    if (!["item", "title", "link", "desc"].includes(key)) continue;
+
+    const regex = line.slice(eq + 1).trim();
+    if (!regex.startsWith("/")) continue;
+
+    const lastSlash = regex.lastIndexOf("/");
+    if (lastSlash <= 0) continue;
+
+    const pattern = regex.slice(1, lastSlash); // raw between slashes
+    if (!pattern) continue; // empty pattern is like not set
+
+    const flags = regex.slice(lastSlash + 1); // may be empty
+
+    try {
+      const pat = pattern.replace('\/', '/');
+      out[key] = new RegExp(pat, flags);
+    } catch {
+      // ignore invalid regex
+    }
+  }
+
+  return Object.keys(out).length ? out : undefined;
+}
+
+function matchFilters(item, filters, itemText) {
+  if (!filters) return true;
+
+  if (filters.item && !filters.item.test(itemText || "")) return false;
+  if (filters.title && !filters.title.test(item.title || "")) return false;
+  if (filters.link && !filters.link.test(item.link || "")) return false;
+  return !(filters.desc && !filters.desc.test(item.desc || ""));
+}
+
