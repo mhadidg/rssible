@@ -94,7 +94,7 @@ async function handleFeed(req) {
 
 function parseParams(query) {
   const url = (query.get("url") || "").trim();
-  const item = (query.get("item") || "").trim();
+  const item = (query.get("_item") || "").trim();
   if (!url || !item) throw http(400, "Query params 'url' and 'item' are required");
 
   // Default to "lite" (title+link only)

@@ -57,7 +57,8 @@
 <form method="GET" action="/feed">
   <input name="url" placeholder="URL of the page" required/>
   <div class="row">
-    <input name="item" placeholder="Item (e.g., .post)" required title="CSS selector for items (required)"/>
+    <!-- "item" would collide with the built-in form.item -->
+    <input name="_item" placeholder="Item (e.g., .post)" title="CSS selector for items (required)" required/>
     <input name="title" placeholder="Title (e.g., .post-title)"
            title="CSS selector inside each item for title (optional)"/>
   </div>
@@ -123,7 +124,6 @@
 
     function sync() {
       const isFull = mode.value === 'full';
-      fullRow.classList.toggle('hidden', !isFull);
       desc.disabled = !isFull;
       date.disabled = !isFull;
     }
@@ -254,7 +254,6 @@
     }
 
     form.addEventListener('input', save, { passive: true });
-    form.addEventListener('change', save);
   })();
 </script>
 </html>
