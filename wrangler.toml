@@ -1,7 +1,14 @@
-name = "feedmaker"
+name = "rssible"
 main = "worker.js"
 compatibility_date = "2025-09-21"
 
 [assets]
 directory = "./public"
 binding = "ASSETS"
+
+[observability.logs]
+enabled = true
+
+[[routes]]
+pattern = "rssible.hadid.dev"
+custom_domain = true

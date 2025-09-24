@@ -1,9 +1,9 @@
 /**
  * Optimized URL/HTML → RSS generator (Cloudflare workers runtime)
  * - Static assets served via ASSETS binding (wrangler.toml)
- * - Worker handles /feed and a minimal /favicon.ico
  * - Lite mode (default): title+link only (fastest)
  * - Full mode: also description/date (slower)
+ * - Advanced mode: custom headers, filtering (slowest)
  */
 
 export default {
@@ -58,7 +58,7 @@ async function handleFeed(req) {
   }
 
   const defaultHeaders = {
-    'User-Agent': 'RSSible/1.0 (+https://rssible.mhadidg.com/)', //
+    'User-Agent': 'RSSible/1.0 (+https://rssible.hadid.dev/)', //
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
   };
 
@@ -136,7 +136,7 @@ function parseParams(query) {
   }
 
   // Compiles to array of { field, regex }
-  const filterRaw = trim(query.get("filters")); // one textarea; multiple lines
+  const filterRaw = trim(query.get("filters"));
   console.log(`Filters: ${JSON.stringify(filterRaw)}`);
   const filters = filterRaw ? parseFilters(filterRaw) : undefined;
 
