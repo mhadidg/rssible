@@ -122,7 +122,7 @@ function parseParams(query) {
   const streamRaw = (query.get("stream") || "on").toLowerCase();
   const stream = !(streamRaw === "off");
 
-  let headers;
+  let headers = {};
   // Base64-encoded RFC-style headers block
   const headersB64 = trim(query.get("headers"));
   if (mode === "advanced" && headersB64) {
@@ -137,8 +137,7 @@ function parseParams(query) {
 
   // Compiles to array of { field, regex }
   const filterRaw = trim(query.get("filters"));
-  console.log(`Filters: ${JSON.stringify(filterRaw)}`);
-  const filters = filterRaw ? parseFilters(filterRaw) : undefined;
+  const filters = filterRaw ? parseFilters(filterRaw) : {};
 
   return { url, item, title, link, desc, date, mode, limit, stream, headers, filters };
 }
@@ -347,10 +346,10 @@ function sanitizeHeaders(headers) {
     out[k] = v;
   }
 
-  return Object.keys(out).length ? out : undefined;
+  return Object.keys(out).length ? out : {};
 }
 
-// Supported keys: item, title, link, desc (date not unsupported)
+// Supported keys: item, title, link, desc (date unsupported)
 // Block lines like: key=/pattern/flags
 function parseFilters(block) {
   const out = {};
@@ -387,11 +386,9 @@ function parseFilters(block) {
 }
 
 function matchFilters(item, filters, itemText) {
-  if (!filters) return true;
-
-  if (filters.item && !filters.item.test(itemText || "")) return false;
-  if (filters.title && !filters.title.test(item.title || "")) return false;
-  if (filters.link && !filters.link.test(item.link || "")) return false;
-  return !(filters.desc && !filters.desc.test(item.desc || ""));
+  if (filters.item && !filters.item.test(itemText)) return false;
+  if (filters.title && !filters.title.test(item.title)) return false;
+  if (filters.link && !filters.link.test(item.link)) return false;
+  return !(filters.desc && !filters.desc.test(item.desc));
 }
 
