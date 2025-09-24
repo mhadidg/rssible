@@ -3,10 +3,10 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="stylesheet" href="assets/water.css">
-<title>Feedmaker</title>
+<title>RSSible: URL + CSS = RSS feed</title>
 <style>
   body {
-    font: 16px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
+    font: 14.666px/1.45 system-u i, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
     max-width: 720px;
     margin: 3rem auto;
     padding: 0 1rem;
@@ -54,6 +54,10 @@
   .textarea-wrapper {
     margin-right: 6px;
   }
+
+  textarea {
+    line-height: inherit;
+  }
 </style>
 <h1>RSSible</h1>
 <p>Paste a URL and CSS selectors; get an RSS feed.</p>
@@ -92,7 +96,7 @@
     <div class="textarea-wrapper">
       <textarea
         name="filters" rows="4" title="Supported keys: item, title, link, desc. 'item' matches any text inside."
-        placeholder="Filters (JS-style, one per line):&#10;item=/keyword/i&#10;title=/python|rust/i"></textarea>
+        placeholder="Filters (JS-style, one per line; hover for keys):&#10;item=/keyword/i&#10;title=/python|rust/i"></textarea>
     </div>
   </div>
 
