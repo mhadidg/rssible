@@ -38,13 +38,7 @@ if (!DEBUG) {
   console.log = () => {};
 }
 
-function safeCap(text, maxChars) {
-  if (!text) return "";
-  if (text.length <= maxChars) return text.trim();
-  return text.slice(0, maxChars).trim();
-}
-
-async function handleFeed(req) {
+async function handleFeed(req, ctx) {
   const url = new URL(req.url);
   const params = parseParams(url.searchParams);
 
@@ -86,13 +80,14 @@ async function handleFeed(req) {
 
   const res = new Response(rssXml, {
     headers: {
-      "content-type": "application/rss+xml; charset=utf-8", //
-      // "cache-control": `public, max-age=${CACHE_TTL}`,
+      "Content-Type": "application/rss+xml; charset=utf-8", //
+      // "Cache-Control": `public, max-age=${CACHE_TTL}`,
     },
   });
 
   if (!DISABLE_CACHE) {
-    await cache.put(cacheKey, res.clone());
+    res.headers.set("Cache-Control", `s-maxage=${CACHE_TTL}`);
+    ctx.waitUntil(cache.put(cacheKey, res.clone()));
   }
 
   return res;
@@ -301,6 +296,12 @@ function http(status, message) {
 function decodeB64(rawB64) {
   // matches client-side btoa(raw)
   return atob(rawB64);
+}
+
+function safeCap(text, maxChars) {
+  if (!text) return "";
+  if (text.length <= maxChars) return text.trim();
+  return text.slice(0, maxChars).trim();
 }
 
 function parseHeaders(block) {
