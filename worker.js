@@ -123,6 +123,11 @@ async function extractItems(upstream, params) {
 
       current = { _text: "", title: "", desc: "" }; // reset for new item
       elem.onEndTag(() => {
+        current.title = normalizeText(current.title);
+        current.desc = normalizeText(current.desc);
+        current.link = normalizeText(current.link);
+        current._text = normalizeText(current._text);
+
         const match = matchFilters(current, params.filters);
         if ((current.title || current.link) && match) {
           items.push(current);
@@ -271,6 +276,70 @@ function indent(str, n) {
   return " ".repeat(n) + str;
 }
 
+// ¯\_(ツ)_/¯
+const namedMap = {
+  '&amp;': '&', //
+  '&lt;': '<', //
+  '&gt;': '>', //
+  '&quot;': '"', //
+  '&apos;': "'", //
+  '&lpar;': '(', //
+  '&rpar;': ')', //
+  '&lsqb;': '[', //
+  '&rsqb;': ']', //
+  '&lcub;': '{', //
+  '&rcub;': '}', //
+  '&ast;': '*', //
+  '&bsol;': '\\', //
+  '&sol;': '/', //
+  '&nbsp;': '\u00A0', //
+  '&excl;': '!', //
+  '&num;': '#', //
+  '&dollar;': '$', //
+  '&percnt;': '%', //
+  '&commat;': '@', //
+  '&quest;': '?', //
+  '&semi;': ';', //
+  '&colon;': ':', //
+  '&equals;': '=', //
+  '&plus;': '+', //
+  '&minus;': '-', //
+  '&lowbar;': '_', //
+  '&grave;': '`', //
+  '&tilde;': '~', //
+  '&vert;': '|',
+};
+
+function decodeHTML(str) {
+  if (!str) return str;
+
+  // &#...; (decimal)
+  str = str.replace(/&#(\d+);/g, (match, dec) => {
+    const code = Number(dec);
+    return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+  });
+
+  // &#x...; (hex)
+  str = str.replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => {
+    const code = parseInt(hex, 16);
+    return Number.isFinite(code) ? String.fromCodePoint(code) : match;
+  });
+
+  // Dynamically build a regex
+  const namedRe = new RegExp(Object.keys(namedMap)
+    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) // escape regex specials
+    .join('|'), 'g');
+
+  // Single regex to avoid multiple scans
+  return str.replace(/&[a-z]+;/gi, (m) => namedMap[m.toLowerCase()] || m);
+}
+
+function normalizeText(s) {
+  if (!s) return "";
+  s = s.replace(/\s+/g, ' ').trim();
+  return decodeHTML(s);
+}
+
 // CPU-friendly escape
 function esc(str) {
   str = String(str);
@@ -286,7 +355,7 @@ function http(status, message) {
 }
 
 function decodeB64(rawB64) {
-  // matches client-side btoa(raw)
+  // matches client-side btoa(...)
   return atob(rawB64);
 }
 
@@ -364,9 +433,7 @@ function parseFilters(block) {
     try {
       const pat = pattern.replace('\/', '/');
       out[key] = new RegExp(pat, flags);
-    } catch {
-      // ignore invalid regex
-    }
+    } catch {} // ignore invalid regex
   }
 
   return Object.keys(out).length ? out : undefined;
