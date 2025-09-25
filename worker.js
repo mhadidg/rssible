@@ -19,10 +19,10 @@ export default {
     }
 
     try {
-      return await handleFeed(req);
-    } catch (e) {
-      const status = e?.status || 500;
-      return new Response(e?.message || "Internal Error", { status });
+      return await handleFeed(req, ctx);
+    } catch (err) {
+      const status = err?.status || 500;
+      return new Response(err?.message || "Internal Error", { status });
     }
   },
 };
@@ -43,40 +43,30 @@ async function handleFeed(req, ctx) {
   const params = parseParams(url.searchParams);
 
   // Caching; key includes params
-  let cache, cacheKey;
+  let cacheKey;
   if (!DISABLE_CACHE) {
-    cache = caches.default;
     cacheKey = new Request(url.toString(), req);
-    const cached = await cache.match(cacheKey);
+    const cached = await caches.default.match(cacheKey);
     if (cached) return cached;
   }
-
-  const defaultHeaders = {
-    'User-Agent': 'RSSible/1.0 (+https://rssible.hadid.dev/)', //
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-  };
 
   // NOTE: network wait not counted in CPU time
   const upstream = await fetch(params.url, {
     redirect: "follow", //
-    signal: AbortSignal.timeout(3_000), //
-    headers: { ...defaultHeaders, ...params.headers }, // params override
+    // signal: AbortSignal.timeout(3_000), //
+    headers: {
+      'User-Agent': 'RSSible/1.0 (+https://rssible.hadid.dev/)', //
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', //
+      ...params.headers // user-provided headers override defaults
+    },
   }).catch((error) => {
     throw http(502, `Page fetch error: ${error.message}`);
   });
 
   if (!upstream.ok) throw http(502, `Upstream ${upstream.status}`);
 
-  const t0 = performance.now(); // start CPU timing
   const items = await extractItems(upstream, params);
   const rssXml = buildRss({ params, items });
-  const t1 = performance.now(); // end CPU timing
-
-  console.log(JSON.stringify({
-    "cpu-time": +(t1 - t0).toFixed(3), //
-    count: items.length, //
-    mode: params.mode,
-  }));
 
   const res = new Response(rssXml, {
     headers: {
@@ -87,28 +77,28 @@ async function handleFeed(req, ctx) {
 
   if (!DISABLE_CACHE) {
     res.headers.set("Cache-Control", `s-maxage=${CACHE_TTL}`);
-    ctx.waitUntil(cache.put(cacheKey, res.clone()));
+    ctx.waitUntil(caches.default.put(cacheKey, res.clone()));
   }
 
   return res;
 }
 
 function parseParams(query) {
-  const url = (query.get("url") || "").trim();
-  const item = (query.get("_item") || "").trim();
+  const url = query.get("url")?.trim();
+  const item = query.get("_item")?.trim();
   if (!url || !item) throw http(400, "Query params 'url' and 'item' are required");
 
   // Default to "lite" mode (title & link only)
   const modeRaw = (query.get("mode") || "lite").toLowerCase();
   const mode = (modeRaw === "full") ? "full" : (modeRaw === "advanced" ? "advanced" : "lite");
 
-  const title = trim(query.get("title"));
-  const link = trim(query.get("link"));
+  const title = query.get("title")?.trim();
+  const link = query.get("link")?.trim();
   if (!title && !link) throw http(400, "Provide at least one selector: 'title' or 'link'.");
 
   // In lite mode, ignore desc/date entirely (less CPU time)
-  const desc = (mode !== "lite") ? trim(query.get("desc")) : undefined;
-  const date = (mode !== "lite") ? trim(query.get("date")) : undefined;
+  const desc = (mode !== "lite") ? query.get("desc")?.trim() : undefined;
+  const date = (mode !== "lite") ? query.get("date")?.trim() : undefined;
 
   // Accept weird formats, like OxFF or 1e1
   const limitRaw = Number(query.get("limit") || DEFAULT_LIMIT);
@@ -119,7 +109,7 @@ function parseParams(query) {
 
   let headers = {};
   // Base64-encoded RFC-style headers block
-  const headersB64 = trim(query.get("headers"));
+  const headersB64 = query.get("headers")?.trim();
   if (mode === "advanced" && headersB64) {
     try {
       const raw = decodeB64(headersB64);
@@ -131,10 +121,10 @@ function parseParams(query) {
   }
 
   // Compiles to array of { field, regex }
-  const filterRaw = trim(query.get("filters"));
+  const filterRaw = query.get("filters")?.trim();
   const filters = filterRaw ? parseFilters(filterRaw) : {};
 
-  return { url, item, title, link, desc, date, mode, limit, stream, headers, filters };
+  return { url, item, title, link, desc, date, limit, stream, headers, filters };
 }
 
 async function extractItems(upstream, params) {
@@ -157,8 +147,6 @@ async function extractItems(upstream, params) {
         if ((current.title || current.link) && match) {
           items.push(current);
         }
-
-        current = {}; // reset for next item
       });
     },
 
@@ -283,14 +271,10 @@ function esc(str) {
   return str.replace(/[<>&]/g, (c) => (c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&amp;"));
 }
 
-function trim(s) {
-  return (s && s.trim()) || undefined;
-}
-
 function http(status, message) {
-  const e = new Error(message);
-  e.status = status;
-  return e;
+  const err = new Error(message);
+  err.status = status;
+  return err;
 }
 
 function decodeB64(rawB64) {
