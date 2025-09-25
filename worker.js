@@ -127,6 +127,8 @@ function parseParams(query) {
   return { url, item, title, link, desc, date, limit, stream, headers, filters };
 }
 
+// Read HTMLRewriter doc to figure out what the hell is going on here:
+// https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/
 async function extractItems(upstream, params) {
   const items = [];
   let current = null;
@@ -141,32 +143,40 @@ async function extractItems(upstream, params) {
     element(elem) {
       if (items.length >= params.limit) return;
 
-      current = { _text: "" };
+      current = { _text: "", title: "", desc: "" }; // reset for new item
       elem.onEndTag(() => {
-        const match = matchFilters(current, params.filters, current._text);
+        const match = matchFilters(current, params.filters);
         if ((current.title || current.link) && match) {
           items.push(current);
         }
       });
     },
 
+    // Text within item element (for filtering)
     text(text) {
       if (!params.filters.item) return;
-      if (!current || items.length >= params.limit) return;
-      if (current._text && current._text.length >= CAP_ITEMTEXT) return;
+      if (items.length >= params.limit) return;
+      if (current._text.length >= CAP_ITEMTEXT) return;
+
+      // Add space between text nodes; e.g., <p>one</p><p>two</p>
+      if (text.lastInTextNode) current._text += " "
 
       const chunk = text.text;
-      if (chunk) current._text = safeCap((current._text || "") + chunk, CAP_ITEMTEXT);
+      if (chunk) current._text = safeCap(current._text + chunk, CAP_ITEMTEXT);
     },
   });
 
   if (params.title) {
+    // Include text of all matching nodes
     rewriter.on(`${params.item} ${params.title}`, {
       text(text) {
-        if (current.title || items.length >= params.limit) return;
+        if (items.length >= params.limit) return;
 
-        const value = safeCap(text.text, CAP_TITLE);
-        if (value) current.title = value;
+        // Add space between text nodes; e.g., <p>one</p><p>two</p>
+        if (text.lastInTextNode) current.title += " "
+
+        const chunk = text.text?.trim();
+        if (chunk) current.title = safeCap(current.title + chunk, CAP_TITLE);
       },
     });
   }
@@ -187,32 +197,44 @@ async function extractItems(upstream, params) {
   }
 
   if (params.desc) {
+    // Include text of all matching nodes
     rewriter.on(`${params.item} ${params.desc}`, {
       text(text) {
-        if (current.desc || items.length >= params.limit) return;
+        if (items.length >= params.limit) return;
 
-        const value = safeCap(text.text, CAP_DESC);
-        if (value) current.desc = value;
+        // Add space between text nodes; e.g., <p>one</p><p>two</p>
+        if (text.lastInTextNode) current.desc += " "
+
+        const chunk = text.text?.trim();
+        if (chunk) current.desc = safeCap(current.desc + chunk, CAP_DESC);
       },
     });
   }
 
   if (params.date) {
+    // Parse all matches, first valid match wins
+    let rawText = ""; // full text node; chunks merged
     rewriter.on(`${params.item} ${params.date}`, {
       text(text) {
-        if (current.pubDate || items.length >= params.limit) return;
+        if (items.length >= params.limit) return;
+        if (current.pubDate) return; // already have a date
 
-        const value = safeCap(text.text, CAP_DATE);
-        if (value) current.pubDate = new Date(value).toISOString();
+        rawText += text.text;
+        if (!text.lastInTextNode) return; // partial chunk
+
+        rawText = safeCap(rawText, CAP_DATE);
+        try {
+          if (rawText) current.pubDate = new Date(rawText).toISOString();
+        } catch {
+          rawText = ""; // reset for next match
+        }
       },
     });
   }
 
   const transformed = rewriter.transform(upstream);
   if (params.stream) {
-    // HTMLRewriter runs a streaming HTML tokenizer/parser
-    // over a byte stream. It keeps its own internal buffer
-    // so that tag/text boundaries may span chunks.
+    // Zero-copy streaming parsing
     const reader = transformed.body.getReader();
     while (true) {
       // Pulls in chunks; controlled by producer
@@ -370,8 +392,8 @@ function parseFilters(block) {
   return Object.keys(out).length ? out : undefined;
 }
 
-function matchFilters(item, filters, itemText) {
-  if (filters.item && !filters.item.test(itemText)) return false;
+function matchFilters(item, filters) {
+  if (filters.item && !filters.item.test(item._text)) return false;
   if (filters.title && !filters.title.test(item.title)) return false;
   if (filters.link && !filters.link.test(item.link)) return false;
   return !(filters.desc && !filters.desc.test(item.desc));
