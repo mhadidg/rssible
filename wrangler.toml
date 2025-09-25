@@ -9,6 +9,8 @@ binding = "ASSETS"
 [observability.logs]
 enabled = true
 
-[[routes]]
-pattern = "rssible.hadid.dev"
-custom_domain = true
+# Optional: If you want to use a custom domain
+# Also configurable in the Cloudflare dashboard
+# [[routes]]
+# pattern = "rssible.hadid.dev"
+# custom_domain = true
