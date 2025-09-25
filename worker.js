@@ -9,18 +9,6 @@
 
 export default {
   async fetch(req, env, ctx) {
-    const url = new URL(req.url);
-
-    // Handle favicon quickly
-    if (url.pathname === "/favicon.ico") {
-      return new Response(null, { status: 204 });
-    }
-
-    // All non-/feed requests go to public/
-    if (url.pathname !== "/feed") {
-      return env.ASSETS.fetch(req);
-    }
-
     try {
       return await handleFeed(req, ctx);
     } catch (err) {
