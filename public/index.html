@@ -58,9 +58,50 @@
   textarea {
     line-height: inherit;
   }
+
+  #demos {
+    list-style: square;
+    padding-left: 16px;
+  }
 </style>
 <h1>RSSible</h1>
-<p>Paste a URL and CSS selectors; get an RSS feed.</p>
+<p>
+  Paste a URL and CSS selectors; get an RSS feed;
+  free and <a href="https://github.com/mhadidg/rssible">opensource</a>.
+</p>
+<p>
+  Runs entirely on the <em>free tier</em> of
+  <a href="https://workers.cloudflare.com">Cloudflare workers</a>.
+  Click on the demo links ⤸ to see it in action.
+</p>
+
+<ul id="demos">
+  <li>
+    <a href="#" class="demo"
+       data-config='{"url":"https://news.ycombinator.com","item":".titleline","title":"> a","link":"a","mode":"advanced","filters":"link=/github/i"}'
+    >Hacker News</a>: filtered to GitHub links only
+  </li>
+  <li>
+    <a href="#" class="demo"
+       data-config='{"url":"https://www.reddit.com/r/programming/top/?t=week","item":"article","title":"faceplate-screen-reader-content","link":"[slot=\"thumbnail\"] a","mode":"lite","limit":"10"}'
+    >Reddit r/programming</a>: top 10 over the past 7-days window
+  </li>
+  <li>
+    <a href="#" class="demo"
+       data-config='{"url":"https://github.com/trending?since=daily","item":"article","title":"h2","link":"h2 a","desc":"p","mode":"full","limit":"20"}'
+    >Github trending repos</a>: updated daily
+  </li>
+  <li>
+    <a href="#" class="demo"
+       data-config='{"url":"https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=10000,&genres=sci-fi&sort=release_date,desc","item":"li.ipc-metadata-list-summary-item","title":".ipc-title","link":"a.ipc-title-link-wrapper","desc":".ipc-html-content-inner-div","mode":"full"}'
+    >IMDb Sci-Fi Series</a>: latest; ≥10k votes
+  </li>
+  <li>
+    <a href="#" class="demo"
+       data-config='{"url":"https://www.anthropic.com/news","item":"a[href^=\"/news\"][class^=\"Card\"]","title":"h3","link":"@","date":"p","mode":"full"}'
+    >Anthropic news</a> (special <code>@</code> for link means the item selector itself)
+  </li>
+</ul>
 
 <form method="GET" action="/feed">
   <input name="url" placeholder="URL of the page" required/>
@@ -90,7 +131,7 @@
     <div class="textarea-wrapper">
       <textarea
         name="headers_text" rows="4" title="Empty headers are allowed; unsupported headers will be ignored."
-        placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: text/html"></textarea>
+        placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: */*"></textarea>
       <input name="headers" type="hidden"/>
     </div>
     <div class="textarea-wrapper">
@@ -121,7 +162,13 @@
   <div class="separator"></div>
 
   <b>Pro tip:</b> Use <code>:first-of-type</code> or <code>:nth-of-type(n)</code> if
-  the selector matches multiple elements <em>inside</em> the <em>item</em>.<br>
+  the selector matches multiple sibling elements <em>inside</em> the <em>item</em>.<br>
+
+  <div class="separator"></div>
+
+  <b>Pro tip:</b> To <em>exclude</em> items with certain words, use a negative lookahead regex.
+  For example, <code>/^(?!.*(python|rust)).*$/</code> matches everything except strings
+  containing "python" or "rust".<br>
 </small>
 
 <pre id="preview">
@@ -154,7 +201,7 @@
       if (desc.disabled) desc.value = '';
       if (date.disabled) date.value = '';
       if (headers.disabled) headers.value = '';
-      if (filters.disabled) headers.value = '';
+      if (filters.disabled) filters.value = '';
     }
 
     mode.addEventListener('change', sync);
@@ -263,7 +310,7 @@
           el.value = v;
         }
 
-        // re-sync "full-only" row if mode was restored
+        // Enable/disable mode-specific fields
         const mode = form.elements['mode'];
         mode && mode.dispatchEvent(new Event('change'));
       }
@@ -291,7 +338,7 @@
   const headersText = advancedRow.querySelector('textarea[name="headers_text"]');
   const headersB64 = advancedRow.querySelector('input[name="headers"]');
 
-  // Encode RFC-style header block into base64 (ASCII-safe)
+  // Encode into base64 for transport
   function encodeHeaders(raw) {
     return raw ? btoa(raw) : "";
   }
@@ -309,4 +356,48 @@
   };
 </script>
 
+<script>
+  // Invoke preview on demo link click
+  (function () {
+    const form = document.querySelector('form');
+    const modeEl = form.elements['mode'];
+    const filtersEl = document.querySelector('#row-advanced-only [name="filters"]');
+    const previewBtn = document.getElementById('preview-btn');
+
+    function fill(config) {
+      const mapping = {
+        url: 'url', item: '_item', title: 'title', link: 'link',
+        desc: 'desc', date: 'date', limit: 'limit'
+      };
+
+      // Clear all fields first
+      for (const el of form.elements) {
+        if (el.name) el.value = '';
+      }
+
+      for (const [k, formName] of Object.entries(mapping)) {
+        if (config[k] != null) form.elements[formName].value = config[k];
+      }
+
+      // Enable/disable mode-specific fields
+      if (config.mode) {
+        modeEl.value = config.mode;
+        modeEl.dispatchEvent(new Event('change'));
+      }
+
+      // Now we can update mode-specific fields
+      if (config.filters != null) {
+        filtersEl.value = config.filters;
+      }
+    }
+
+    document.querySelectorAll('#demos .demo').forEach(link => {
+      link.addEventListener('click', event => {
+        event.preventDefault();
+        fill(JSON.parse(link.dataset.config));
+        previewBtn.click();
+      });
+    });
+  })();
+</script>
 </html>
