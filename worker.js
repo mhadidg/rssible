@@ -130,12 +130,6 @@ async function extractItems(upstream, params) {
   const items = [];
   let current;
 
-  // Cap to cut long strings
-  const CAP_TITLE = 128;
-  const CAP_DESC = 1024;
-  const CAP_DATE = 64;
-  const CAP_ITEMTEXT = 2048; // item-level text captured for filtering
-
   const rewriter = new HTMLRewriter().on(params.item, {
     element(elem) {
       if (items.length >= params.limit) return;
@@ -155,13 +149,13 @@ async function extractItems(upstream, params) {
     text(text) {
       if (!params.filters.item) return;
       if (items.length >= params.limit) return;
-      if (current._text.length >= CAP_ITEMTEXT) return;
 
       // Add space between text nodes; e.g., <p>one</p><p>two</p>
       if (text.lastInTextNode) current._text += " "
 
-      const chunk = text.text;
-      if (chunk) current._text = safeCap(current._text + chunk, CAP_ITEMTEXT);
+      const chunk = text.text?.trim();
+      if (chunk) current._text += chunk;
+      current._text = current._text?.trim();
     },
   });
 
@@ -175,7 +169,8 @@ async function extractItems(upstream, params) {
         if (text.lastInTextNode) current.title += " "
 
         const chunk = text.text?.trim();
-        if (chunk) current.title = safeCap(current.title + chunk, CAP_TITLE);
+        if (chunk) current.title = current.title + chunk;
+        current.title = current.title?.trim();
       },
     });
   }
@@ -210,27 +205,27 @@ async function extractItems(upstream, params) {
         if (text.lastInTextNode) current.desc += " "
 
         const chunk = text.text?.trim();
-        if (chunk) current.desc = safeCap(current.desc + chunk, CAP_DESC);
+        if (chunk) current.desc += chunk;
+        current.desc = current.desc?.trim();
       },
     });
   }
 
   if (params.date) {
     // Parse all matches, first valid match wins
-    let rawText = ""; // full text node; chunks merged
+    let nodeText = ""; // whole text node; chunks merged
     rewriter.on(`${params.item} ${params.date}`, {
       text(text) {
         if (items.length >= params.limit) return;
         if (current.pubDate) return; // already have a date
 
-        rawText += text.text;
+        nodeText += text.text;
         if (!text.lastInTextNode) return; // partial chunk
 
-        rawText = safeCap(rawText, CAP_DATE);
         try {
-          if (rawText) current.pubDate = new Date(rawText).toISOString();
+          current.pubDate = new Date(nodeText).toISOString();
         } catch {
-          rawText = ""; // reset for next match
+          nodeText = ""; // reset for next match
         }
       },
     });
@@ -306,12 +301,6 @@ function http(status, message) {
 function decodeB64(rawB64) {
   // matches client-side btoa(raw)
   return atob(rawB64);
-}
-
-function safeCap(text, maxChars) {
-  if (!text) return "";
-  if (text.length <= maxChars) return text.trim();
-  return text.slice(0, maxChars).trim();
 }
 
 function parseHeaders(block) {
