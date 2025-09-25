@@ -182,9 +182,14 @@ async function extractItems(upstream, params) {
   }
 
   if (params.link) {
-    rewriter.on(`${params.item} ${params.link}`, {
+    const isSelf = params.link === '@' || params.link === '.';
+    const linkSelector = isSelf ? params.item : `${params.item} ${params.link}`;
+
+    // First element with href attribute wins
+    rewriter.on(linkSelector, {
       element(elem) {
-        if (current.link || items.length >= params.limit) return
+        if (items.length >= params.limit) return;
+        if (current.link) return; // already have a link
 
         let href = elem.getAttribute("href");
         if (href && href.startsWith('/')) {
