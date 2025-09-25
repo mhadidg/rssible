@@ -11,8 +11,6 @@ of [Cloudflare Workers](https://workers.cloudflare.com/).
 
 </div>
 
----
-
 ## How it works
 
 At its core, **RSSible** takes a webpage link and turns it into an RSS feed.
@@ -27,8 +25,6 @@ for any RSS reader.
 
 The browser UI (`public/**`) is just a helper. It lets you build query URLs visually, preview the first two items, and
 copy the feed link. The `worker.js` is the Cloudflare Worker script.
-
----
 
 ## Deploy your own instance
 
@@ -45,19 +41,15 @@ npx wrangler login
 npx wrangler deploy
 ```
 
-Config lives in [`wrangler.toml`](./wrangler.toml). Adjust the `name`, `routes`, and `custom_domain` for your setup.
-
 Once deployed, you’ll have a live endpoint:
 
 ```
 https://your-worker.your-subdomain.workers.dev
 ```
 
----
-
 ## Run locally with Docker
 
-You can also run RSSible in a container, handy for local or self-hosting.
+You can also run RSSible in a container, handy for local- or self-hosting.
 
 ```
 # Navigate to project dir
@@ -70,7 +62,7 @@ docker build -t rssible .
 docker run --rm -p 8787:8787 rssible
 ```
 
-Then visit `http://localhost:8787` in your browser.
+Should be ready at `http://localhost:8787`.
 
 ## Keep it running locally (systemd)
 
@@ -107,15 +99,15 @@ Check the logs to make sure things are all good:
 sudo journalctl -u rssible -f
 ```
 
-That's it. You've just made it like any other app on your system; except the UI is web-based.
-
----
+That's it. You've just made it like any other app on your system, except the UI is web-based.
 
 ## Showcase examples
 
 See demo links on the [project homepage](https://rssible.hadid.dev/).
 
----
+## Acknowledgments
+
+This project was inspired by [Feedmaker](https://github.com/kevinschaul/feedmaker).
 
 ## License
 
