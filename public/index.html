@@ -277,9 +277,9 @@
     const fd = new FormData(form);
     const qs = new URLSearchParams();
 
-    // Get rid of empty params
+    // Filter out params for transport
     for (const [key, val] of fd.entries()) {
-      if (key === 'headers_text') continue;
+      if (key === 'headers_text' || key === 'mode') continue;
       const v = val.trim?.() ?? val;
       if (v) qs.set(key, v);
     }

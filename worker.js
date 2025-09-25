@@ -1,9 +1,10 @@
 /**
- * Optimized URL/HTML → RSS generator (Cloudflare workers runtime)
+ * Optimized URL/HTML → RSS generator (Cloudflare workers)
  * - Static assets served via ASSETS binding (wrangler.toml)
- * - Lite mode (default): title+link only (fastest)
- * - Full mode: also description/date (slower)
- * - Advanced mode: custom headers, filtering (slowest)
+ * - Supported fields: required (title or link), optional (desc, date)
+ * - Regex-based filtering for item, title, link, desc (date unsupported)
+ * - Custom HTTP headers (RFC-style = newline-delimited; base64-encoded)
+ * - Caching via Cloudflare edge (can be disabled)
  */
 
 export default {
@@ -11,7 +12,9 @@ export default {
     const url = new URL(req.url);
 
     // Handle favicon quickly
-    if (url.pathname === "/favicon.ico") return new Response(null, { status: 204 });
+    if (url.pathname === "/favicon.ico") {
+      return new Response(null, { status: 204 });
+    }
 
     // All non-/feed requests go to public/
     if (url.pathname !== "/feed") {
@@ -53,7 +56,6 @@ async function handleFeed(req, ctx) {
   // NOTE: network wait not counted in CPU time
   const upstream = await fetch(params.url, {
     redirect: "follow", //
-    // signal: AbortSignal.timeout(3_000), //
     headers: {
       'User-Agent': 'RSSible/1.0 (+https://rssible.hadid.dev/)', //
       'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', //
@@ -88,17 +90,12 @@ function parseParams(query) {
   const item = query.get("_item")?.trim();
   if (!url || !item) throw http(400, "Query params 'url' and 'item' are required");
 
-  // Default to "lite" mode (title & link only)
-  const modeRaw = (query.get("mode") || "lite").toLowerCase();
-  const mode = (modeRaw === "full") ? "full" : (modeRaw === "advanced" ? "advanced" : "lite");
-
   const title = query.get("title")?.trim();
   const link = query.get("link")?.trim();
   if (!title && !link) throw http(400, "Provide at least one selector: 'title' or 'link'.");
 
-  // In lite mode, ignore desc/date entirely (less CPU time)
-  const desc = (mode !== "lite") ? query.get("desc")?.trim() : undefined;
-  const date = (mode !== "lite") ? query.get("date")?.trim() : undefined;
+  const desc = query.get("desc")?.trim();
+  const date = query.get("date")?.trim();
 
   // Accept weird formats, like OxFF or 1e1
   const limitRaw = Number(query.get("limit") || DEFAULT_LIMIT);
@@ -108,15 +105,15 @@ function parseParams(query) {
   const stream = !(streamRaw === "off");
 
   let headers = {};
-  // Base64-encoded RFC-style headers block
+  // Base64-encoded headers (newline-delimited)
   const headersB64 = query.get("headers")?.trim();
-  if (mode === "advanced" && headersB64) {
+  if (headersB64) {
     try {
       const raw = decodeB64(headersB64);
       // Converts to { name: value, ... }
       headers = sanitizeHeaders(parseHeaders(raw));
     } catch (e) {
-      throw http(400, "Invalid 'headers' parameter (base64 or header lines).");
+      throw http(400, "Invalid 'headers' parameter (base64-encoded).");
     }
   }
 
@@ -131,7 +128,7 @@ function parseParams(query) {
 // https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/
 async function extractItems(upstream, params) {
   const items = [];
-  let current = null;
+  let current;
 
   // Cap to cut long strings
   const CAP_TITLE = 128;
@@ -153,6 +150,8 @@ async function extractItems(upstream, params) {
     },
 
     // Text within item element (for filtering)
+    // A text node may come in chunks/fragmented
+    // See https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/#text-chunks
     text(text) {
       if (!params.filters.item) return;
       if (items.length >= params.limit) return;
