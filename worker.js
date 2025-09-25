@@ -22,8 +22,8 @@ const DEFAULT_LIMIT = 5; // items per feed
 const MAX_LIMIT = 25; // max items per feed
 const CACHE_TTL = 300; // in seconds; 5 minutes
 
-const DISABLE_CACHE = true; // for testing
-const DEBUG = true; // for debugging
+const DISABLE_CACHE = false; // for testing
+const DEBUG = false; // for debugging
 
 if (!DEBUG) {
   console.log = () => {};
@@ -61,12 +61,11 @@ async function handleFeed(req, ctx) {
   const res = new Response(rssXml, {
     headers: {
       "Content-Type": "application/rss+xml; charset=utf-8", //
-      // "Cache-Control": `public, max-age=${CACHE_TTL}`,
+      "Cache-Control": `public, max-age=${CACHE_TTL}`,
     },
   });
 
   if (!DISABLE_CACHE) {
-    res.headers.set("Cache-Control", `s-maxage=${CACHE_TTL}`);
     ctx.waitUntil(caches.default.put(cacheKey, res.clone()));
   }
 
