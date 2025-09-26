@@ -3,73 +3,9 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+<link rel="stylesheet" href="/css/styles.css">
 <script src="/js/app.js" defer></script>
 <title>RSSible: URL + CSS = RSS feed</title>
-
-<style>
-  body {
-    font: 14.666px/1.45 system-u i, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;
-    max-width: 720px;
-    margin: 3rem auto;
-    padding: 0 1rem;
-  }
-
-  form {
-    display: grid;
-    gap: .6rem
-  }
-
-  .row {
-    display: grid;
-    grid-template-columns:1fr 1fr;
-    gap: .6rem
-  }
-
-  :root {
-    --tip-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" aria-hidden="true" viewBox="0 0 24 24" fill="%23555"><circle cx="12" cy="12" r="10" fill="none" stroke="%23555" stroke-width="1.5"/><path d="M12 17h.01M9.5 10.5a2.5 2.5 0 1 1 4.3 1.7c-.7.7-1.3 1-1.3 2.3" stroke="%23555" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>');
-  }
-
-  input[title] {
-    background-image: var(--tip-icon);
-    background-repeat: no-repeat;
-    background-position: right .65rem center;
-    background-size: 1rem;
-    padding-right: 2rem;
-  }
-
-  :root {
-    --sep: rgba(0, 0, 0, .15);
-  }
-
-  .separator {
-    border-top: 1px dashed rgba(0, 0, 0, .15);
-    margin: .5rem 0;
-  }
-
-  #preview code {
-    padding: 1.5em;
-    max-height: 280px;
-    font-size: 0.85em;
-    overflow: auto;
-  }
-
-  .textarea-wrapper {
-    margin-right: 6px;
-  }
-
-  textarea {
-    line-height: inherit;
-  }
-
-  #demos {
-    list-style: square;
-    padding-left: 16px;
-  }
-
-  footer {
-    text-align: center;
-  }
-</style>
 
 <h1>RSSible</h1>
 
@@ -112,15 +48,26 @@
 </ul>
 
 <form method="GET" action="/feed">
-  <input name="url" placeholder="URL of the page" required/>
+  <input name="url" placeholder="page url" required/>
+
   <div class="row">
-    <!-- "item" would collide with the built-in form.item -->
-    <input name="_item" placeholder="Item container (e.g., .post)" title="CSS selector for items (required)" required/>
-    <input name="title" placeholder="Title (e.g., .post-title)" title="CSS selector inside each item for title (optional)"/>
+    <div class="input-container item">
+      <span class="sticky-text">$</span>
+      <input
+        name="_item" placeholder="items container (e.g., .post)"
+        title="The base selector for the rest of the fields, e.g., title selector will be '{item} {title}'" required/>
+    </div>
+    <div class="input-container title">
+      <span class="sticky-text">title</span>
+      <input name="title" placeholder=".post-title"/>
+    </div>
   </div>
 
   <div class="row">
-    <input name="link" placeholder="Link (e.g., .post-title a)" title="CSS selector inside each item for link (optional)"/>
+    <div class="input-container link">
+      <span class="sticky-text">link</span>
+      <input name="link" placeholder=".post-title a"/>
+    </div>
     <select name="mode" id="mode">
       <option value="lite" selected>🐣 Lite mode</option>
       <option value="full">🐥 Full mode</option>
@@ -130,8 +77,14 @@
 
   <!-- Enabled only when mode=full -->
   <div class="row" id="row-full-only">
-    <input name="desc" placeholder="Description (e.g., .post-excerpt)" title="CSS selector for description"/>
-    <input name="date" placeholder="Date (e.g., .post-date)" title="CSS selector for pub date; must be parsable by JS Date()."/>
+    <div class="input-container desc">
+      <span class="sticky-text">desc</span>
+      <input name="desc" placeholder=".post-excerpt"/>
+    </div>
+    <div class="input-container date">
+      <span class="sticky-text">date</span>
+      <input name="date" placeholder=".post-date" title="Must be parsable by JS Date()."/>
+    </div>
   </div>
 
   <!-- Enabled only when mode=advanced -->
@@ -139,18 +92,21 @@
     <div class="textarea-wrapper">
       <textarea
         name="headers_text" rows="4" title="Empty headers are allowed; unsupported headers will be ignored."
-        placeholder="Custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: */*"></textarea>
+        placeholder="custom headers (RFC-style, one per line):&#10;User-Agent: RSSible/1.0&#10;Accept: */*"></textarea>
       <input name="headers" type="hidden"/>
     </div>
     <div class="textarea-wrapper">
       <textarea
         name="filters" rows="4" title="Supported keys: item, title, link, desc. 'item' matches any text inside."
-        placeholder="Filters (JS-style, one per line; hover for keys):&#10;item=/keyword/i&#10;title=/python|rust/i"></textarea>
+        placeholder="filters (JS-style, one per line; hover for keys):&#10;item=/keyword/i&#10;title=/python|rust/i"></textarea>
     </div>
   </div>
 
   <div class="row">
-    <input name="limit" placeholder="Items limit (e.g, 10)" title="Max number of items to include (default 5, max 25)"/>
+    <div class="input-container limit">
+      <span class="sticky-text">limit</span>
+      <input name="limit" placeholder="5" title="Max number of items to include (default 5, max 25)"/>
+    </div>
     <span><!-- keep for alignment --></span>
   </div>
 
