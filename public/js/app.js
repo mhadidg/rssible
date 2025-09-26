@@ -13,10 +13,6 @@
         if (!elem) continue;
         elem.value = val;
       }
-
-      // Enable/disable mode-specific fields
-      const mode = form.elements['mode'];
-      mode && mode.dispatchEvent(new Event('change'));
     }
   } catch {}
 
@@ -38,39 +34,6 @@
 
   form.addEventListener('input', save, { passive: true });
 })();
-
-// Disable mode-specific fields when mode changes
-(function () {
-  const mode = document.getElementById('mode');
-
-  const fullRow = document.getElementById('row-full-only');
-  const descElem = fullRow.querySelector('[name="desc"]');
-  const dateElem = fullRow.querySelector('[name="date"]');
-
-  const advancedRow = document.getElementById('row-advanced-only');
-  const headersElem = advancedRow.querySelector('[name="headers_text"]');
-  const filtersElem = advancedRow.querySelector('[name="filters"]');
-
-  function sync() {
-    const isFull = mode.value === 'full';
-    const isAdvanced = mode.value === 'advanced';
-
-    descElem.disabled = !(isFull || isAdvanced);
-    dateElem.disabled = !(isFull || isAdvanced);
-    headersElem.disabled = !isAdvanced;
-    filtersElem.disabled = !isAdvanced;
-
-    // If disabled clear values
-    if (descElem.disabled) descElem.value = '';
-    if (dateElem.disabled) dateElem.value = '';
-    if (headersElem.disabled) headersElem.value = '';
-    if (filtersElem.disabled) filtersElem.value = '';
-  }
-
-  mode.addEventListener('change', sync);
-  sync(); // sync on page load
-})();
-
 
 // Preview RSS feed with first two items
 (function () {
@@ -140,7 +103,7 @@
 
     // Filter out params for transport
     for (const [key, val] of formData.entries()) {
-      if (key === 'headers_text' || key === 'mode') continue;
+      if (key === 'headers_text') continue;
       const normed = val.trim?.() ?? val;
       if (normed) params.set(key, normed);
     }
@@ -181,15 +144,13 @@
 // Invoke preview on demo link click
 (function () {
   const formElem = document.querySelector('form');
-  const modeElem = formElem.elements['mode'];
-  const filtersElem = document.querySelector('#row-advanced-only [name="filters"]');
   const previewBtn = document.getElementById('preview-btn');
 
   function fill(config) {
     const mapping = {
       url: 'url', item: '_item', title: 'title', //
       link: 'link', desc: 'desc', date: 'date', //
-      limit: 'limit'
+      limit: 'limit', filters: 'filters'
     };
 
     // Clear all fields first
@@ -199,17 +160,6 @@
 
     for (const [key, formName] of Object.entries(mapping)) {
       if (config[key]) formElem.elements[formName].value = config[key];
-    }
-
-    // Enable/disable mode-specific fields
-    if (config.mode) {
-      modeElem.value = config.mode;
-      modeElem.dispatchEvent(new Event('change'));
-    }
-
-    // Now we can update mode-specific fields
-    if (config.filters != null) {
-      filtersElem.value = config.filters;
     }
   }
 

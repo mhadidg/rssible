@@ -68,26 +68,23 @@
       <span class="sticky-text">link</span>
       <input name="link" placeholder=".post-title a"/>
     </div>
-    <select name="mode" id="mode">
-      <option value="lite" selected>🐣 Lite mode</option>
-      <option value="full">🐥 Full mode</option>
-      <option value="advanced">🦅 Advanced mode</option>
-    </select>
-  </div>
-
-  <!-- Enabled only when mode=full -->
-  <div class="row" id="row-full-only">
     <div class="input-container desc">
       <span class="sticky-text">desc</span>
       <input name="desc" placeholder=".post-excerpt"/>
     </div>
+  </div>
+
+  <div class="row" id="row-full-only">
     <div class="input-container date">
       <span class="sticky-text">date</span>
       <input name="date" placeholder=".post-date" title="Must be parsable by JS Date()."/>
     </div>
+    <div class="input-container limit">
+      <span class="sticky-text">limit</span>
+      <input name="limit" placeholder="5" title="Max number of items to include (default 5, max 25)"/>
+    </div>
   </div>
 
-  <!-- Enabled only when mode=advanced -->
   <div class="row" id="row-advanced-only">
     <div class="textarea-wrapper">
       <textarea
@@ -100,14 +97,6 @@
         name="filters" rows="4" title="Supported keys: item, title, link, desc. 'item' matches any text inside."
         placeholder="filters (JS-style, one per line; hover for keys):&#10;item=/keyword/i&#10;title=/python|rust/i"></textarea>
     </div>
-  </div>
-
-  <div class="row">
-    <div class="input-container limit">
-      <span class="sticky-text">limit</span>
-      <input name="limit" placeholder="5" title="Max number of items to include (default 5, max 25)"/>
-    </div>
-    <span><!-- keep for alignment --></span>
   </div>
 
   <div class="row">
