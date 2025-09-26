@@ -325,11 +325,6 @@ function decodeHTML(str) {
     return Number.isFinite(code) ? String.fromCodePoint(code) : match;
   });
 
-  // Dynamically build a regex
-  const namedRe = new RegExp(Object.keys(namedMap)
-    .map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) // escape regex specials
-    .join('|'), 'g');
-
   // Single regex to avoid multiple scans
   return str.replace(/&[a-z]+;/gi, (m) => namedMap[m.toLowerCase()] || m);
 }
