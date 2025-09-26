@@ -1,15 +1,15 @@
-FROM node:20-slim
-
-# Install wrangler CLI
-RUN npm install -g wrangler
+FROM node:22-slim
 
 WORKDIR /app
+COPY package.json ./
 
-# Copy source
-COPY . .
+# Install wrangler version from package.json
+RUN set -eux; \
+    VER="$(npm pkg get devDependencies.wrangler | tr -d '"')"; \
+    npm install -g "wrangler@${VER}"
 
-# Expose port
+COPY worker.js wrangler.toml ./
+COPY public ./public
+
 EXPOSE 8787
-
-# Default command: preview mode (hot reload off)
-CMD ["wrangler", "dev", "--local", "--port", "8787"]
+CMD ["wrangler", "dev", "--ip", "0.0.0.0", "--port", "8787"]
