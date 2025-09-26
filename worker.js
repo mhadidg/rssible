@@ -426,12 +426,15 @@ function parseFilters(block) {
     const flags = regex.slice(lastSlash + 1); // may be empty
 
     try {
-      const pat = pattern.replace('\/', '/');
+      const pat = pattern
+        .replace('\/', '/')
+        .replace('\=', '=');
+
       out[key] = new RegExp(pat, flags);
     } catch {} // ignore invalid regex
   }
 
-  return Object.keys(out).length ? out : undefined;
+  return Object.keys(out).length ? out : {};
 }
 
 function matchFilters(item, filters) {
