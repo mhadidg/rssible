@@ -22,27 +22,27 @@
 <ul id="demos">
   <li>
     <a href="#" class="demo"
-       data-config='{"url":"https://news.ycombinator.com","item":".titleline","title":"> a","link":"a","mode":"advanced","filters":"link=/github/i"}'
-    >Hacker News</a>: filtered to GitHub links only
+       data-config='{"url":"https://news.ycombinator.com","item":".titleline","title":"> a","link":"a","filters":"link=/(blog|post)/i"}'
+    >Hacker News</a>: include blog posts only
   </li>
   <li>
     <a href="#" class="demo"
-       data-config='{"url":"https://www.reddit.com/r/programming/top/?t=week","item":"article","title":"faceplate-screen-reader-content","link":"[slot=\"thumbnail\"] a","mode":"lite","limit":"10"}'
+       data-config='{"url":"https://www.reddit.com/r/programming/top/?t=week","item":"article","title":"faceplate-screen-reader-content","link":"[slot=\"thumbnail\"] a","limit":"10"}'
     >Reddit r/programming</a>: top 10 over the past 7-days window
   </li>
   <li>
     <a href="#" class="demo"
-       data-config='{"url":"https://github.com/trending?since=daily","item":"article","title":"h2","link":"h2 a","desc":"p","mode":"full","limit":"20"}'
-    >Github trending repos</a>: updated daily
+       data-config='{"url":"https://github.com/trending?since=daily","item":"article","title":"h2","link":"h2 a","desc":"p","filters":"desc=/^(?!.*[\\u4e00-\\u9fff]).*/u","limit":"20"}'
+    >Github trending repos</a>: exclude Chinese repos (with respect)
   </li>
   <li>
     <a href="#" class="demo"
-       data-config='{"url":"https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=10000,&genres=sci-fi&sort=release_date,desc","item":"li.ipc-metadata-list-summary-item","title":".ipc-title","link":"a.ipc-title-link-wrapper","desc":".ipc-html-content-inner-div","mode":"full"}'
+       data-config='{"url":"https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=10000,&genres=sci-fi&sort=release_date,desc","item":"li.ipc-metadata-list-summary-item","title":".ipc-title","link":"a.ipc-title-link-wrapper","desc":".ipc-html-content-inner-div"}'
     >IMDb Sci-Fi Series</a>: latest; ≥10k votes
   </li>
   <li>
     <a href="#" class="demo"
-       data-config='{"url":"https://www.anthropic.com/news","item":"a[href^=\"/news\"][class^=\"Card\"]","title":"h3","link":"@","date":"p","mode":"full"}'
+       data-config='{"url":"https://www.anthropic.com/news","item":"a[href^=\"/news\"][class^=\"Card\"]","title":"h3","link":"@","date":"p"}'
     >Anthropic news</a> (special <code>@</code> for link means the item selector itself)
   </li>
 </ul>
@@ -130,6 +130,6 @@
 
 <footer class="site-footer">
   Inspired by <a href="https://github.com/kevinschaul/feedmaker/" rel="noopener noreferrer">Feedmaker</a>.
-  Built by <a href="https://hadid.dev" rel="noopener noreferrer">Mustapha</a>.
+  Made by <a href="https://hadid.dev" rel="noopener noreferrer">Mustapha</a>.
 </footer>
 </html>
