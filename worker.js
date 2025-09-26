@@ -55,7 +55,21 @@ async function handleFeed(req, ctx) {
 
   if (!upstream.ok) throw http(502, `Upstream ${upstream.status}`);
 
-  const items = await extractItems(upstream, params);
+  // Accept JSON; covert to HTML for parsing
+  const isJson = isJsonResponse(upstream);
+  const source = isJson ? await jsonToHtml(upstream, params) : upstream;
+
+  // For debugging: return the converted HTML
+  if (url.searchParams.get('mirror')) {
+    if (!isJson) {
+      // Don't use me as a proxy for arbitrary sites
+      throw http(501, 'The "mirror" option only supports JSON responses.');
+    }
+
+    return source;
+  }
+
+  const items = await extractItems(source, params);
   const rssXml = buildRss({ params, items });
 
   const res = new Response(rssXml, {
@@ -74,22 +88,6 @@ async function handleFeed(req, ctx) {
 
 function parseParams(query) {
   const url = query.get("url")?.trim();
-  const item = query.get("_item")?.trim();
-  if (!url || !item) throw http(400, "Query params 'url' and 'item' are required");
-
-  const title = query.get("title")?.trim();
-  const link = query.get("link")?.trim();
-  if (!title && !link) throw http(400, "Provide at least one selector: 'title' or 'link'.");
-
-  const desc = query.get("desc")?.trim();
-  const date = query.get("date")?.trim();
-
-  // Accept weird formats, like OxFF or 1e1
-  const limitRaw = Number(query.get("limit") || DEFAULT_LIMIT);
-  const limit = Math.min(isFinite(limitRaw) ? limitRaw : DEFAULT_LIMIT, MAX_LIMIT);
-
-  const streamRaw = (query.get("stream") || "on").toLowerCase();
-  const stream = !(streamRaw === "off");
 
   let headers = {};
   // Base64-encoded headers (newline-delimited)
@@ -103,6 +101,31 @@ function parseParams(query) {
       throw http(400, "Invalid 'headers' parameter (base64-encoded).");
     }
   }
+
+  if (query.get("mirror")) {
+    return { url, headers };
+  }
+
+  const item = query.get("_item")?.trim();
+  if (!url || !item) {
+    throw http(400, "Query params 'url' and 'item' are required");
+  }
+
+  const title = query.get("title")?.trim();
+  const link = query.get("link")?.trim();
+  if (!title && !link) {
+    throw http(400, "Provide at least one selector: 'title' or 'link'.");
+  }
+
+  const desc = query.get("desc")?.trim();
+  const date = query.get("date")?.trim();
+
+  // Accept weird formats, like OxFF or 1e1
+  const limitRaw = Number(query.get("limit") || DEFAULT_LIMIT);
+  const limit = Math.min(isFinite(limitRaw) ? limitRaw : DEFAULT_LIMIT, MAX_LIMIT);
+
+  const streamRaw = (query.get("stream") || "on").toLowerCase();
+  const stream = !(streamRaw === "off");
 
   // Compiles to array of { field, regex }
   const filterRaw = query.get("filters")?.trim();
@@ -443,4 +466,59 @@ function matchFilters(item, filters) {
   if (filters.link && !filters.link.test(item.link)) return false;
   return !(filters.desc && !filters.desc.test(item.desc));
 }
+
+function isJsonResponse(res) {
+  const contentType = res.headers.get('content-type') || '';
+  return contentType.includes('application/json');
+}
+
+async function jsonToHtml(res) {
+  let data;
+  try {
+    data = JSON.parse(await res.text());
+  } catch {
+    throw http(502, "Invalid JSON from upstream.");
+  }
+
+  const _class = (key) => String(key ?? '')
+    .replace(/[^a-z0-9_\-$]/g, '-') // special char -> dash
+    .replace(/-+/g, '-'); // collapse dashes
+
+  function toHtml(key, value) {
+    const cls = _class(key);
+
+    if (value === null || value === undefined) {
+      return `<div class="${cls}"></div>`;
+    }
+
+    const type = typeof value;
+    if (type === 'number' || type === 'boolean') {
+      return `<div class="${cls}">${esc(String(value))}</div>`;
+    }
+
+    if (type === 'string') {
+      if (/^https?:\/\//i.test(value)) {
+        return `<a class="${cls}" href="${esc(value)}"></a>`;
+      } else {
+        return `<div class="${cls}">${esc(value)}</div>`;
+      }
+    }
+
+    if (Array.isArray(value)) {
+      return `<div class="${cls}">` + value.map(v => toHtml('_item', v)).join('') + `</div>`;
+    }
+
+    if (type === 'object') {
+      return `<div class="${cls}">` + Object.entries(value).map(([k, v]) => toHtml(k, v)).join('') + `</div>`;
+    }
+
+    return `<div class="${cls}">${esc(String(value))}</div>`;
+  }
+
+  const html = '<!doctype html><meta charset="utf-8">' + '<body>' + toHtml('_root', data) + '</body>';
+
+  // text/plain for easy debugging in browser
+  return new Response(html, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+}
+
 
