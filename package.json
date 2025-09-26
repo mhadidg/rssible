@@ -1,16 +1,9 @@
 {
   "name": "feedmaker",
-  "version": "1.0.0",
-  "description": "",
-  "main": "worker.js",
   "scripts": {
-    "dev": "npx wrangler dev --local --port 3333",
-    "deploy": "npx wrangler deploy",
-    "repomix": "npx repomix --include 'public/**,worker.js,wrangler.toml' -i public/assets -o repomix.xml"
+    "dev": "npx wrangler dev --port 3333",
+    "repomix": "npx repomix -i node_modules -o repomix.xml"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "wrangler": "^4.38.0",
     "repomix": "^1.6.0"
