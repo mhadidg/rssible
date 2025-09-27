@@ -1,5 +1,5 @@
 /**
- * Optimized URL/HTML → RSS generator (Cloudflare workers)
+ * Optimized URL (HTML|JSON) → RSS generator (Cloudflare workers)
  * - Static assets served via ASSETS binding (wrangler.toml)
  * - Supported fields: required (title or link), optional (desc, date)
  * - Regex-based filtering for item, title, link, desc (date unsupported)
@@ -30,6 +30,11 @@ if (!DEBUG) {
 }
 
 async function handleFeed(req, ctx) {
+  const isJsonResponse = res => {
+    const type = res.headers.get('content-type') || '';
+    return type.includes('application/json');
+  };
+
   const url = new URL(req.url);
   const params = parseParams(url.searchParams);
 
@@ -59,11 +64,11 @@ async function handleFeed(req, ctx) {
   const isJson = isJsonResponse(upstream);
   const source = isJson ? await jsonToHtml(upstream, params) : upstream;
 
-  // For debugging: return the converted HTML
+  // For debugging: return the converted HTML from JSON
   if (url.searchParams.get('mirror')) {
     if (!isJson) {
       // Don't use me as a proxy for arbitrary sites
-      throw http(501, 'The "mirror" option only supports JSON responses.');
+      throw http(501, 'The "mirror" option only supports JSON pages.');
     }
 
     return source;
@@ -94,7 +99,7 @@ function parseParams(query) {
   const headersB64 = query.get("headers")?.trim();
   if (headersB64) {
     try {
-      const raw = decodeB64(headersB64);
+      const raw = atob(headersB64);
       // Converts to { name: value, ... }
       headers = sanitizeHeaders(parseHeaders(raw));
     } catch (e) {
@@ -137,6 +142,19 @@ function parseParams(query) {
 // Read HTMLRewriter doc to figure out what the hell is going on here:
 // https://developers.cloudflare.com/workers/runtime-apis/html-rewriter/
 async function extractItems(upstream, params) {
+  const normalizeText = str => {
+    if (!str) return "";
+    str = str.replace(/\s+/g, ' ').trim();
+    return decodeHTML(str);
+  };
+
+  const matchFilters = (item, filters) => {
+    if (filters.item && !filters.item.test(item._text)) return false;
+    if (filters.title && !filters.title.test(item.title)) return false;
+    if (filters.link && !filters.link.test(item.link)) return false;
+    return !(filters.desc && !filters.desc.test(item.desc));
+  };
+
   const items = [];
   let current;
 
@@ -267,6 +285,8 @@ function buildRss({ params, items }) {
   const now = new Date().toUTCString();
   const { origin, host } = new URL(params.url);
 
+  const indent = (str, n) => " ".repeat(n) + str;
+
   let out = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -293,10 +313,6 @@ function buildRss({ params, items }) {
   out += "\n" + indent("</channel>", 2);
   out += "\n</rss>";
   return out;
-}
-
-function indent(str, n) {
-  return " ".repeat(n) + str;
 }
 
 // ¯\_(ツ)_/¯
@@ -352,12 +368,6 @@ function decodeHTML(str) {
   return str.replace(/&[a-z]+;/gi, (m) => namedMap[m.toLowerCase()] || m);
 }
 
-function normalizeText(s) {
-  if (!s) return "";
-  s = s.replace(/\s+/g, ' ').trim();
-  return decodeHTML(s);
-}
-
 // CPU-friendly escape
 function esc(str) {
   str = String(str);
@@ -370,11 +380,6 @@ function http(status, message) {
   const err = new Error(message);
   err.status = status;
   return err;
-}
-
-function decodeB64(rawB64) {
-  // matches client-side btoa(...)
-  return atob(rawB64);
 }
 
 function parseHeaders(block) {
@@ -460,18 +465,6 @@ function parseFilters(block) {
   return Object.keys(out).length ? out : {};
 }
 
-function matchFilters(item, filters) {
-  if (filters.item && !filters.item.test(item._text)) return false;
-  if (filters.title && !filters.title.test(item.title)) return false;
-  if (filters.link && !filters.link.test(item.link)) return false;
-  return !(filters.desc && !filters.desc.test(item.desc));
-}
-
-function isJsonResponse(res) {
-  const contentType = res.headers.get('content-type') || '';
-  return contentType.includes('application/json');
-}
-
 async function jsonToHtml(res) {
   let data;
   try {
@@ -517,8 +510,6 @@ async function jsonToHtml(res) {
 
   const html = '<!doctype html><meta charset="utf-8">' + '<body>' + toHtml('_root', data) + '</body>';
 
-  // text/plain for easy debugging in browser
+  // Using text/plain for easy debugging in browser
   return new Response(html, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 }
-
-
