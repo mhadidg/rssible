@@ -20,7 +20,7 @@ export default {
 
 const DEFAULT_LIMIT = 5; // items per feed
 const MAX_LIMIT = 25; // max items per feed
-const CACHE_TTL = 300; // in seconds; 5 minutes
+const CACHE_TTL = 900; // in seconds; 15 minutes
 
 const DISABLE_CACHE = false; // for testing
 const DEBUG = false; // for debugging
