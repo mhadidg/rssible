@@ -38,8 +38,8 @@ async function handleFeed(req, ctx) {
   const url = new URL(req.url);
   const params = parseParams(url.searchParams);
 
-  // Caching; key includes params
   let cacheKey;
+  // Caching; key includes params
   if (!url.searchParams.get('nocache') && !DISABLE_CACHE) {
     cacheKey = new Request(url.toString(), req);
     const cached = await caches.default.match(cacheKey);
@@ -64,6 +64,7 @@ async function handleFeed(req, ctx) {
   const isJson = isJsonResponse(upstream);
   const source = isJson ? await jsonToHtml(upstream, params) : upstream;
 
+  let res;
   // For debugging: return the converted HTML from JSON
   if (url.searchParams.get('mirror')) {
     if (!isJson) {
@@ -71,18 +72,18 @@ async function handleFeed(req, ctx) {
       throw http(501, 'The "mirror" option only supports JSON pages.');
     }
 
-    return source;
+    res = source;
+  } else {
+    const items = await extractItems(source, params);
+    const rssXml = buildRss({ params, items });
+
+    res = new Response(rssXml, {
+      headers: {
+        "Content-Type": "application/rss+xml; charset=utf-8", //
+        "Cache-Control": `public, max-age=${CACHE_TTL}`,
+      },
+    });
   }
-
-  const items = await extractItems(source, params);
-  const rssXml = buildRss({ params, items });
-
-  const res = new Response(rssXml, {
-    headers: {
-      "Content-Type": "application/rss+xml; charset=utf-8", //
-      "Cache-Control": `public, max-age=${CACHE_TTL}`,
-    },
-  });
 
   if (!DISABLE_CACHE) {
     ctx.waitUntil(caches.default.put(cacheKey, res.clone()));
@@ -511,5 +512,10 @@ async function jsonToHtml(res) {
   const html = '<!doctype html><meta charset="utf-8">' + '<body>' + toHtml('_root', data) + '</body>';
 
   // Using text/plain for easy debugging in browser
-  return new Response(html, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8', //
+      "Cache-Control": `public, max-age=${CACHE_TTL}`,
+    }
+  });
 }
