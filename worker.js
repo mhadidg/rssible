@@ -40,7 +40,7 @@ async function handleFeed(req, ctx) {
 
   // Caching; key includes params
   let cacheKey;
-  if (!DISABLE_CACHE) {
+  if (!url.searchParams.get('nocache') && !DISABLE_CACHE) {
     cacheKey = new Request(url.toString(), req);
     const cached = await caches.default.match(cacheKey);
     if (cached) return cached;
