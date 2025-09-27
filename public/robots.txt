@@ -1,0 +1,11 @@
+User-agent: *
+
+# Homepage
+Allow: /$
+
+# CSS and JS assets
+Allow: /css/
+Allow: /js/
+
+# Block everything else
+Disallow: /
