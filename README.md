@@ -93,10 +93,9 @@ Would be converted to:
 
 As you may have guessed, you can use the same CSS selectors params for JSON links.
 
-Use `?mirror=1` param to see the converted HTML version of a JSON page; here's an example:
-
-- JSON page: https://api.agify.io/?name=dude
-- HTML version: http://localhost:3333/feed?url=https%3A%2F%2Fapi.agify.io%2F%3Fname%3Ddude&mirror=1
+Use `?mirror=1` param to see the converted HTML version of a JSON page; here's an
+example: [JSON page](https://api.agify.io/?name=dude);
+converted [HTML version](http://rssible.hadid.dev/feed?url=https%3A%2F%2Fapi.agify.io%2F%3Fname%3Ddude&mirror=1).
 
 ## Deploy your own instance
 
