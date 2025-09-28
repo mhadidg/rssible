@@ -1,5 +1,4 @@
 {
-  "name": "feedmaker",
   "scripts": {
     "dev": "npx wrangler dev --port 3333",
     "repomix": "npx repomix -i node_modules -o repomix.xml"
