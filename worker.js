@@ -293,7 +293,7 @@ function buildRss({ params, items }) {
   <channel>
     <title>${esc(host)}</title>
     <link>${esc(params.url)}</link>
-    <generator>Feedmaker</generator>
+    <generator>RSSible</generator>
     <ttl>${CACHE_TTL / 60}</ttl>
     <image>
       <url>${origin}/favicon.ico</url>
