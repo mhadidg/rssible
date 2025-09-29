@@ -323,6 +323,7 @@ const namedMap = {
   '&gt;': '>', //
   '&quot;': '"', //
   '&apos;': "'", //
+  '&rsquo;': "'", //
   '&lpar;': '(', //
   '&rpar;': ')', //
   '&lsqb;': '[', //
@@ -345,6 +346,7 @@ const namedMap = {
   '&plus;': '+', //
   '&minus;': '-', //
   '&lowbar;': '_', //
+  '&mdash;': '—', //
   '&grave;': '`', //
   '&tilde;': '~', //
   '&vert;': '|',
