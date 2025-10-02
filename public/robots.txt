@@ -1,3 +1,5 @@
+Sitemap: https://rssible.hadid.dev/sitemap.xml
+
 User-agent: *
 
 # Homepage
