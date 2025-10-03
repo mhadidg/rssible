@@ -24,23 +24,26 @@
 <ul id="demos">
   <li>
     <a href="#" class="demo"
-       data-config='{"url":"https://www.producthunt.com","item":"[data-test$=\"today\"] section","title":"a[href^=\"/products\"]","link":"a[href^=\"/products\"]","desc":".text-secondary","limit":"10"}'
-    >Product Hunt</a>: the front page
-  </li>
-  <li>
-    <a href="#" class="demo"
        data-config='{"url":"https://www.anthropic.com/news","item":"a[href^=\"/news\"][class^=\"Card\"]","title":"h3","link":"@","date":"p"}'
     >Anthropic news</a> (special <code>@</code> for link means the item selector itself)
   </li>
   <li>
     <a href="#" class="demo"
+       data-config='{"url":"https://hn.algolia.com/api/v1/search_by_date?numericFilters=points>100","item":".hits > ._item","title":"> .title","link":"> .url","limit":"10"}'
+    >HN Algolia</a>: HN posts; ≥100 points (or
+    <a href="#" class="demo"
        data-config='{"url":"https://hn.algolia.com/api/v1/search_by_date?query=github.com&numericFilters=points>100","item":".hits > ._item","title":"> .title","link":"> .url","limit":"10","filters":"link=/(github)/i"}'
-    >HN Algolia</a>: HN posts filtered to Github links only; ≥100 points (JSON page)
+    >filtered to github.com links</a>)
+  </li>
+  <li>
+    <a href="#" class="demo"
+       data-config='{"url":"https://www.producthunt.com","item":"[data-test$=\"today\"] section","title":"a[href^=\"/products\"]","link":"a[href^=\"/products\"]","desc":".text-secondary","limit":"10"}'
+    >Product Hunt</a>: the front page
   </li>
   <li>
     <a href="#" class="demo"
        data-config='{"url":"https://api.github.com/users/yyx990803/starred","item":"._root > ._item","title":"> .full_name","link":"> .html_url","limit":"10"}'
-    >Github /stars</a>: (any) user stars (JSON page)
+    >Github /stars</a>: (any) user stars
   </li>
   <li>
     <a href="#" class="demo"
@@ -121,13 +124,8 @@
 
   <div class="separator"></div>
 
-  <b>JSON pages:</b> internally converted to HTML (nested div elements), where class names match
-  the JSON keys, e.g.,<code>title</code> becomes <code>class="title"</code>. This means you can
-  use the same CSS selectors as HTML pages. Root object has special <code>_root</code> class; array
-  items <code>_item</code> class. Use <code>?mirror=1</code> param to see the converted HTML
-  version of a JSON page
-  (<a href="/feed?url=https%3A%2F%2Fapi.agify.io%2F%3Fname%3Ddude&mirror=1">example</a>;
-  <a href="https://api.agify.io/?name=dude">json link</a>).
+  <b>JSON pages:</b> internally converted to HTML (nested div elements); read more
+  <a href="https://github.com/mhadidg/rssible#json-pages" target="_blank">here</a>.
 
   <div class="separator"></div>
 
