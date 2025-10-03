@@ -166,6 +166,9 @@ async function extractItems(upstream, params) {
       current = { _text: "", title: "", desc: "" }; // reset for new item
       elem.onEndTag(() => {
         current.title = normalizeText(current.title);
+        // Strip leading numbering: 1., (1, and (1)
+        current.title = current.title.replace(/^\(?(\d+)[.)]\s+/, '')
+
         current.desc = normalizeText(current.desc);
         current.link = normalizeText(current.link);
         current._text = normalizeText(current._text);
