@@ -1,4 +1,5 @@
 {
+  "name": "rssible",
   "scripts": {
     "dev": "npx wrangler dev --port 3333",
     "repomix": "npx repomix -i node_modules --stdout | sed 's/```/~~~/' > repomix.xml"
