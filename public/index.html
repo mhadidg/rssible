@@ -24,6 +24,11 @@
 <ul id="demos">
   <li>
     <a href="#" class="demo"
+       data-config='{"url":"https://www.producthunt.com","item":"[data-test$=\"today\"] section","title":"a[href^=\"/products\"]","link":"a[href^=\"/products\"]","desc":".text-secondary","limit":"10"}'
+    >Product Hunt</a>: the front page
+  </li>
+  <li>
+    <a href="#" class="demo"
        data-config='{"url":"https://www.anthropic.com/news","item":"a[href^=\"/news\"][class^=\"Card\"]","title":"h3","link":"@","date":"p"}'
     >Anthropic news</a> (special <code>@</code> for link means the item selector itself)
   </li>
@@ -37,16 +42,6 @@
   </li>
   <li>
     <a href="#" class="demo"
-       data-config='{"url":"https://www.producthunt.com","item":"[data-test$=\"today\"] section","title":"a[href^=\"/products\"]","link":"a[href^=\"/products\"]","desc":".text-secondary","limit":"10"}'
-    >Product Hunt</a>: the front page
-  </li>
-  <li>
-    <a href="#" class="demo"
-       data-config='{"url":"https://api.github.com/users/yyx990803/starred","item":"._root > ._item","title":"> .full_name","link":"> .html_url","limit":"10"}'
-    >Github /stars</a>: (any) user stars
-  </li>
-  <li>
-    <a href="#" class="demo"
        data-config='{"url":"https://www.reddit.com/r/science/top/.json?t=week","item":".children > ._item > .data","title":"> .title","link":"> .url","limit":"10"}'
     >Reddit r/science</a>: top 10 over 7-days window
   </li>
@@ -54,6 +49,11 @@
     <a href="#" class="demo"
        data-config='{"url":"https://www.imdb.com/search/title/?title_type=tv_series,tv_miniseries&num_votes=10000,&genres=sci-fi&sort=release_date,desc","item":".ipc-metadata-list-summary-item","title":".ipc-title","link":".ipc-title-link-wrapper","desc":".ipc-html-content-inner-div","limit":"10"}'
     >IMDb Sci-Fi Series</a>: latest; ≥10k votes
+  </li>
+  <li>
+    <a href="#" class="demo"
+       data-config='{"url":"https://api.github.com/users/yyx990803/starred","item":"._root > ._item","title":"> .full_name","link":"> .html_url","limit":"10"}'
+    >Github /stars</a>: (any) user stars
   </li>
 </ul>
 
